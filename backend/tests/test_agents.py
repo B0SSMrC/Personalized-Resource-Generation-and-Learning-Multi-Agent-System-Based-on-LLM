@@ -131,3 +131,29 @@ async def test_profiler_drops_unknown_concepts():
     events = await _collect(ProfilerAgent(llm).run("x", Profile()))
     prof = events[-1].data["profile"]
     assert prof["mastered"] == ["array"]
+
+
+async def test_profiler_moves_concept_from_mastered_to_weak():
+    """用户说某个原本'已掌握'的点现在'薄弱'：应从 mastered 移除、加入 weak，绝不并存。"""
+    inc = {"mastered": ["图", "堆"], "weak_points": ["链表"]}
+    llm = FakeLLMClient(responses=[json.dumps(inc, ensure_ascii=False)])
+    start = Profile(mastered=["array", "linked_list", "queue"], weak_points=["binary_tree"])
+    events = await _collect(ProfilerAgent(llm).run("我学过图和堆，但链表很弱", start))
+    prof = events[-1].data["profile"]
+    assert "linked_list" in prof["weak_points"]
+    assert "linked_list" not in prof["mastered"]
+    assert "graph" in prof["mastered"] and "heap" in prof["mastered"]
+    # 任何知识点都不得同时出现在两列
+    assert not (set(prof["mastered"]) & set(prof["weak_points"]))
+
+
+async def test_profiler_moves_concept_from_weak_to_mastered():
+    """反向：用户说原本'薄弱'的点已掌握，应从 weak 移除、加入 mastered。"""
+    inc = {"mastered": ["二叉树"]}
+    llm = FakeLLMClient(responses=[json.dumps(inc, ensure_ascii=False)])
+    start = Profile(mastered=["array"], weak_points=["binary_tree", "dynamic_programming"])
+    events = await _collect(ProfilerAgent(llm).run("二叉树我已经学会了", start))
+    prof = events[-1].data["profile"]
+    assert "binary_tree" in prof["mastered"]
+    assert "binary_tree" not in prof["weak_points"]
+    assert not (set(prof["mastered"]) & set(prof["weak_points"]))

@@ -43,10 +43,19 @@ def _safe_json(text: str) -> dict:
 
 def _merge(profile: Profile, inc: dict, points: dict[str, KnowledgePoint]) -> Profile:
     data = profile.model_dump()
-    for k in ("mastered", "weak_points"):
-        # 既归一新增量，也顺手清洗历史脏数据（旧版可能存了中文名/垃圾）
-        merged = set(_to_ids(data[k], points)) | set(_to_ids(inc.get(k), points))
-        data[k] = sorted(merged)
+    inc_mastered = set(_to_ids(inc.get("mastered"), points))
+    inc_weak = set(_to_ids(inc.get("weak_points"), points))
+    # 既有值也归一（清洗历史中文名/垃圾）
+    mastered = set(_to_ids(data["mastered"], points))
+    weak = set(_to_ids(data["weak_points"], points))
+    # 新信号优先 + 互斥：刚说“薄弱”的从已掌握移除，刚说“已掌握”的从薄弱移除，
+    # 同一知识点不可同时出现在两列。
+    mastered = (mastered | inc_mastered) - inc_weak
+    weak = (weak | inc_weak) - inc_mastered
+    # 兜底：清除历史遗留的交叠（无新信号时保守归为薄弱，宁可重学也不误判已掌握）。
+    mastered -= weak
+    data["mastered"] = sorted(mastered)
+    data["weak_points"] = sorted(weak)
     for k in ("goal", "preference", "pace"):
         if inc.get(k):
             data[k] = inc[k]
