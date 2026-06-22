@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { getJSON, postJSON, streamSSE } from "./api/client";
 import type { AgentEvent, Graph, Profile } from "./types";
+import Sidebar from "./components/Sidebar";
 import ProfileChat from "./components/ProfileChat";
-import ProfileCard from "./components/ProfileCard";
 import AgentFeed from "./components/AgentFeed";
 import ResourcePanel from "./components/ResourcePanel";
 import KnowledgeGraph from "./components/KnowledgeGraph";
@@ -32,10 +32,12 @@ export default function App() {
     getJSON<Graph>("/knowledge-graph").then(setGraph).catch(console.error);
   }, []);
 
-  async function learn() {
+  async function learn(id: string = kpId) {
+    setKpId(id);
+    setView("workbench");
     setEvents([]);
     setBusy(true);
-    await streamSSE("/learn", { kp_id: kpId }, (ev) =>
+    await streamSSE("/learn", { kp_id: id }, (ev) =>
       setEvents((prev) => [...prev, ev]),
     ).catch(console.error);
     setBusy(false);
@@ -53,106 +55,89 @@ export default function App() {
     const updated = await postJSON<Profile>("/complete", { kp_id: id });
     setProfile(updated);
     await plan();
+    setView("graph"); // 展示重规划后的路径
   }
 
   const explanation = lastDone(events, "tutor");
   const viz = lastDone(events, "visualizer");
   const quiz = lastDone(events, "quizzer");
-
-  const NavBtn = ({ id, label }: { id: View; label: string }) => (
-    <button
-      onClick={() => setView(id)}
-      className={`rounded px-3 py-1 text-sm ${
-        view === id ? "bg-blue-500 text-white" : "bg-gray-100"
-      }`}
-    >
-      {label}
-    </button>
-  );
+  const currentName = graph?.points.find((p) => p.id === kpId)?.name ?? kpId;
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
-      <div className="mb-4 flex items-center gap-4">
-        <h1 className="text-2xl font-bold">个性化学习多智能体系统</h1>
-        <span className="text-sm text-gray-400">数据结构与算法</span>
-        <nav className="ml-auto flex gap-2">
-          <NavBtn id="profile" label="① 对话画像" />
-          <NavBtn id="graph" label="② 知识图谱" />
-          <NavBtn id="workbench" label="③ 学习工作台" />
-        </nav>
-      </div>
+    <div className="flex h-screen text-gray-800">
+      <aside className="w-64 shrink-0 overflow-y-auto border-r bg-white">
+        <Sidebar
+          active={view}
+          onSelect={setView}
+          profile={profile}
+          graph={graph}
+          path={path}
+          kpId={kpId}
+          onPlan={plan}
+          onPickKp={(id) => learn(id)}
+        />
+      </aside>
 
-      {view === "profile" && (
-        <div className="grid h-[70vh] grid-cols-3 gap-4">
-          <div className="col-span-2">
-            <ProfileChat onProfile={setProfile} />
-          </div>
-          <ProfileCard profile={profile} />
-        </div>
-      )}
-
-      {view === "graph" && graph && (
-        <div>
-          <div className="mb-2 flex items-center gap-3">
-            <button
-              onClick={plan}
-              className="rounded bg-blue-500 px-3 py-1 text-sm text-white"
-            >
-              生成个性化学习路径
-            </button>
-            <span className="text-sm text-gray-500">{rationale}</span>
-          </div>
-          <div className="rounded-lg border bg-white">
-            <KnowledgeGraph
-              graph={graph}
-              path={path}
-              onSelect={(id) => {
-                setKpId(id);
-                setView("workbench");
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {view === "workbench" && (
-        <div>
-          <div className="mb-3 flex items-center gap-2">
-            <select
-              value={kpId}
-              onChange={(e) => setKpId(e.target.value)}
-              className="rounded border px-2 py-1 text-sm"
-            >
-              {graph?.points.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={learn}
-              disabled={busy}
-              className="rounded bg-blue-500 px-3 py-1 text-sm text-white disabled:opacity-50"
-            >
-              开始学习（触发多 Agent 协同）
-            </button>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="min-w-0">
-              <AgentFeed events={events} />
+      <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
+        {view === "profile" && (
+          <div>
+            <h2 className="mb-3 text-xl font-bold">① 对话式学习画像构建</h2>
+            <div className="h-[80vh]">
+              <ProfileChat onProfile={setProfile} />
             </div>
-            <div className="col-span-2 min-w-0">
-              <ResourcePanel
-                explanationMd={explanation?.data?.explanation_md ?? ""}
-                viz={viz?.data?.viz ?? null}
-                questions={quiz?.data?.questions ?? []}
-                kpId={kpId}
-                onComplete={complete}
+          </div>
+        )}
+
+        {view === "graph" && graph && (
+          <div>
+            <h2 className="mb-3 text-xl font-bold">② 知识图谱与个性化路径</h2>
+            {rationale && (
+              <p className="mb-3 rounded-lg bg-blue-50 p-3 text-sm leading-relaxed text-gray-700">
+                {rationale}
+              </p>
+            )}
+            <div className="rounded-lg border bg-white">
+              <KnowledgeGraph
+                graph={graph}
+                path={path}
+                onSelect={(id) => learn(id)}
               />
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {view === "workbench" && (
+          <div>
+            <div className="mb-3 flex items-center gap-3">
+              <h2 className="text-xl font-bold">③ 学习工作台</h2>
+              <span className="rounded bg-white px-2 py-0.5 text-sm text-gray-500 shadow-sm">
+                当前：{currentName}
+              </span>
+              <button
+                onClick={() => learn(kpId)}
+                disabled={busy}
+                className="rounded bg-blue-500 px-3 py-1 text-sm text-white disabled:opacity-50"
+              >
+                {busy ? "生成中…" : events.length ? "重新生成" : "开始学习"}
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="min-w-0">
+                <AgentFeed events={events} />
+              </div>
+              <div className="col-span-2 min-w-0">
+                <ResourcePanel
+                  explanationMd={explanation?.data?.explanation_md ?? ""}
+                  viz={viz?.data?.viz ?? null}
+                  questions={quiz?.data?.questions ?? []}
+                  kpId={kpId}
+                  onComplete={complete}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
