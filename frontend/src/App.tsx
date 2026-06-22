@@ -37,6 +37,20 @@ export default function App() {
     getJSON<Graph>("/knowledge-graph").then(setGraph).catch(console.error);
   }, []);
 
+  // 进入知识图谱视图且已有画像、尚未规划时，自动出个性化推荐
+  useEffect(() => {
+    if (
+      view === "graph" &&
+      path.length === 0 &&
+      profile &&
+      (profile.mastered.length > 0 || profile.weak_points.length > 0)
+    ) {
+      plan();
+    }
+    // 仅在视图/画像变化时触发；path 变非空后由上面的 guard 防止重复规划
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, profile]);
+
   // 仅导航，不生成（由人为控制是否生成）
   function openKp(id: string) {
     setKpId(id);
