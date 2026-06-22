@@ -120,7 +120,7 @@ LLM 在预烘内容基础上做个性化润色/调难度。**LLM 失败时直接
 
 ### 4.3 画像存储
 
-SQLite（Python 标准库 `sqlite3`，零配置单文件），薄仓储层封装便于替换。
+**仓储层抽象**：定义统一的画像仓储接口（`get_profile` / `save_profile` / `append_history`）。P0/P1 阶段用内存实现（进程内字典）即可跑通主线；P2 升级为 SQLite 实现（Python 标准库 `sqlite3`，零配置单文件）做真实持久化。两种实现走同一接口，切换不影响上层 Agent。
 
 画像数据结构：
 
@@ -231,7 +231,7 @@ backend/
     data/
       knowledge_graph.json
       resources/         # 各知识点预烘 bundle
-      repository.py      # SQLite 画像存储 + 资源加载
+      repository.py      # 画像仓储(内存/SQLite) + 资源加载
   tests/
   requirements.txt
   .env.example
