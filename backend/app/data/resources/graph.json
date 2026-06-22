@@ -1,0 +1,10 @@
+{
+  "id": "graph",
+  "explanation_md": "## 图\n由顶点和边组成。遍历有 BFS（队列）与 DFS（栈/递归）。邻接表空间 $O(V+E)$。",
+  "viz": {"type": "graph", "params": {"nodes": ["A", "B", "C", "D", "E"], "edges": [["A", "B"], ["A", "C"], ["B", "D"], ["C", "E"]], "start": "A", "mode": "bfs"}},
+  "code": {"language": "python", "source": "from collections import deque\ndef bfs(adj, s):\n    seen, q, out = {s}, deque([s]), []\n    while q:\n        x = q.popleft(); out.append(x)\n        for y in adj[x]:\n            if y not in seen:\n                seen.add(y); q.append(y)\n    return out"},
+  "question_templates": [
+    {"stem": "BFS 用什么数据结构？", "answer": "队列", "difficulty": 1},
+    {"stem": "邻接表存储图的空间复杂度？", "answer": "O(V+E)", "difficulty": 2}
+  ]
+}

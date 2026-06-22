@@ -1,0 +1,47 @@
+from fastapi.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
+
+
+def test_health():
+    r = client.get("/api/health")
+    assert r.status_code == 200
+    assert r.json() == {"status": "ok"}
+
+
+def test_knowledge_graph_endpoint():
+    r = client.get("/api/knowledge-graph")
+    assert r.status_code == 200
+    body = r.json()
+    assert any(p["id"] == "array" for p in body["points"])
+    assert ["array", "linked_list"] in [list(e) for e in body["edges"]]
+
+
+def test_resource_endpoint():
+    r = client.get("/api/resource/array")
+    assert r.status_code == 200
+    assert r.json()["id"] == "array"
+
+
+def test_resource_missing_404():
+    assert client.get("/api/resource/nope").status_code == 404
+
+
+def test_learn_sse_contains_three_agents():
+    r = client.post("/api/learn", json={"kp_id": "array"})
+    assert r.status_code == 200
+    assert "tutor" in r.text and "visualizer" in r.text and "quizzer" in r.text
+    assert "agent_done" in r.text
+
+
+def test_chat_sse_returns_profile():
+    r = client.post("/api/chat", json={"message": "我学过数组"})
+    assert r.status_code == 200
+    assert "profiler" in r.text
+
+
+def test_complete_marks_mastered():
+    r = client.post("/api/complete", json={"kp_id": "array"})
+    assert r.status_code == 200
+    assert "array" in r.json()["mastered"]

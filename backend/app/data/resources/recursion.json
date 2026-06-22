@@ -1,0 +1,10 @@
+{
+  "id": "recursion",
+  "explanation_md": "## 递归与分治\n函数调用自身求解子问题。分治：**分解**子问题、**求解**、**合并**。\n\n以阶乘为例：$n! = n \\times (n-1)!$，递归出口 $0! = 1$。",
+  "viz": {"type": "linear", "params": {"structure": "array", "values": [1, 1, 2, 6, 24], "op": "access", "index": 4}},
+  "code": {"language": "python", "source": "def fact(n):\n    if n == 0:\n        return 1      # 递归出口\n    return n * fact(n - 1)"},
+  "question_templates": [
+    {"stem": "递归必须具备哪两个要素？", "answer": "递归出口（基准情形）与向出口靠拢的递归式", "difficulty": 2},
+    {"stem": "分治算法的三个步骤是？", "answer": "分解、求解、合并", "difficulty": 2}
+  ]
+}

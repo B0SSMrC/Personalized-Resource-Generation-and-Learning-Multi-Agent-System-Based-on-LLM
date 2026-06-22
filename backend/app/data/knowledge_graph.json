@@ -1,0 +1,16 @@
+{
+  "points": [
+    {"id": "array", "name": "数组", "difficulty": 1, "prerequisites": [], "est_minutes": 30, "resource_ref": "resources/array.json"},
+    {"id": "linked_list", "name": "链表", "difficulty": 2, "prerequisites": ["array"], "est_minutes": 35, "resource_ref": "resources/linked_list.json"},
+    {"id": "stack", "name": "栈", "difficulty": 2, "prerequisites": ["array"], "est_minutes": 25, "resource_ref": "resources/stack.json"},
+    {"id": "queue", "name": "队列", "difficulty": 2, "prerequisites": ["array"], "est_minutes": 25, "resource_ref": "resources/queue.json"},
+    {"id": "recursion", "name": "递归与分治", "difficulty": 3, "prerequisites": ["array"], "est_minutes": 40, "resource_ref": "resources/recursion.json"},
+    {"id": "sorting", "name": "排序", "difficulty": 2, "prerequisites": ["array"], "est_minutes": 45, "resource_ref": "resources/sorting.json"},
+    {"id": "binary_tree", "name": "二叉树", "difficulty": 3, "prerequisites": ["linked_list", "recursion"], "est_minutes": 40, "resource_ref": "resources/binary_tree.json"},
+    {"id": "bst", "name": "二叉搜索树", "difficulty": 3, "prerequisites": ["binary_tree"], "est_minutes": 40, "resource_ref": "resources/bst.json"},
+    {"id": "heap", "name": "堆", "difficulty": 4, "prerequisites": ["binary_tree"], "est_minutes": 45, "resource_ref": "resources/heap.json"},
+    {"id": "graph", "name": "图", "difficulty": 4, "prerequisites": ["linked_list", "queue"], "est_minutes": 50, "resource_ref": "resources/graph.json"},
+    {"id": "search_hash", "name": "查找与哈希", "difficulty": 3, "prerequisites": ["array"], "est_minutes": 35, "resource_ref": "resources/search_hash.json"},
+    {"id": "dynamic_programming", "name": "动态规划", "difficulty": 5, "prerequisites": ["recursion"], "est_minutes": 60, "resource_ref": "resources/dynamic_programming.json"}
+  ]
+}

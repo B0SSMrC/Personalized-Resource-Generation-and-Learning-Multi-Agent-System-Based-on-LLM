@@ -1,0 +1,10 @@
+{
+  "id": "queue",
+  "explanation_md": "## 队列\n先进先出（FIFO）。队尾入队、队头出队，均为 $O(1)$。常用于 BFS、任务调度。",
+  "viz": {"type": "linear", "params": {"structure": "queue", "values": [4, 6, 2], "op": "enqueue", "index": 0}},
+  "code": {"language": "python", "source": "from collections import deque\nq = deque()\nq.append(1)   # enqueue\nq.append(2)\nq.popleft()    # -> 1 (FIFO)"},
+  "question_templates": [
+    {"stem": "队列遵循什么原则？", "answer": "先进先出 (FIFO)", "difficulty": 1},
+    {"stem": "BFS 通常借助哪种数据结构实现？", "answer": "队列", "difficulty": 2}
+  ]
+}

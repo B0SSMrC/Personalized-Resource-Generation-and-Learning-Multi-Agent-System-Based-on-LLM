@@ -1,0 +1,9 @@
+{
+  "id": "binary_tree",
+  "explanation_md": "## 二叉树\n每个节点至多两个子节点。常见遍历：前序/中序/后序/层序。中序遍历 BST 得**升序序列**。",
+  "viz": {"type": "tree", "params": {"nodes": [8, 3, 10, 1, 6, 14], "traversal": "inorder"}},
+  "code": {"language": "python", "source": "class Node:\n    def __init__(self, v):\n        self.v, self.left, self.right = v, None, None\n\ndef inorder(n):\n    if not n:\n        return\n    inorder(n.left); print(n.v); inorder(n.right)"},
+  "question_templates": [
+    {"stem": "对二叉搜索树做中序遍历，输出序列有什么特点？", "answer": "升序排列", "difficulty": 2}
+  ]
+}

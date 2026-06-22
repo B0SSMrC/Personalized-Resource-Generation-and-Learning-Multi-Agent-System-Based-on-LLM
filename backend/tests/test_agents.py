@@ -1,0 +1,100 @@
+import json
+
+from app.agents.base import BaseAgent
+from app.agents.profiler import ProfilerAgent
+from app.agents.planner import PlannerAgent
+from app.agents.tutor import TutorAgent
+from app.agents.visualizer import VisualizerAgent
+from app.agents.quizzer import QuizzerAgent
+from app.llm.fake import FakeLLMClient
+from app.models import Profile
+
+
+class _Dummy(BaseAgent):
+    name = "dummy"
+
+
+async def _collect(gen):
+    return [ev async for ev in gen]
+
+
+# ---------- Task 7: 基类 ----------
+
+def test_event_helpers_carry_name():
+    a = _Dummy(FakeLLMClient())
+    assert a.start().type == "agent_start"
+    assert a.start().agent == "dummy"
+    assert a.token("x").content == "x"
+    assert a.done({"k": 1}).data == {"k": 1}
+    assert a.error("oops").type == "agent_error"
+
+
+# ---------- Task 8: 画像 + 规划 ----------
+
+async def test_profiler_merges_increment_into_profile():
+    inc = {"mastered": ["array"], "goal": "期末复习"}
+    llm = FakeLLMClient(responses=[json.dumps(inc)])
+    agent = ProfilerAgent(llm)
+    events = await _collect(agent.run("我学过数组，想准备期末", Profile()))
+    assert events[0].type == "agent_start"
+    done = events[-1]
+    assert done.type == "agent_done"
+    assert "array" in done.data["profile"]["mastered"]
+    assert done.data["profile"]["goal"] == "期末复习"
+
+
+async def test_profiler_tolerates_bad_json():
+    llm = FakeLLMClient(responses=["这不是JSON"])
+    agent = ProfilerAgent(llm)
+    events = await _collect(agent.run("hi", Profile(mastered=["array"])))
+    # 非法 JSON 时保留原画像
+    assert events[-1].data["profile"]["mastered"] == ["array"]
+
+
+async def test_planner_returns_valid_path():
+    llm = FakeLLMClient(responses=["先打基础再进阶"])
+    agent = PlannerAgent(llm)
+    events = await _collect(agent.run(Profile(mastered=["array"], weak_points=["sorting"])))
+    done = events[-1]
+    assert done.type == "agent_done"
+    path = done.data["path"]
+    assert "array" not in path  # 已掌握排除
+    assert path.index("sorting") < path.index("linked_list")  # 薄弱优先
+    assert done.data["rationale"]
+
+
+# ---------- Task 9: 资源生成三 Agent ----------
+
+async def test_tutor_streams_and_returns_explanation():
+    llm = FakeLLMClient(responses=["数组讲解内容"])
+    events = await _collect(TutorAgent(llm).run("array", Profile()))
+    assert any(e.type == "token" for e in events)
+    assert events[-1].type == "agent_done"
+    assert events[-1].data["explanation_md"]
+
+
+async def test_tutor_falls_back_to_prebaked_on_llm_failure():
+    class Boom(FakeLLMClient):
+        async def stream(self, messages, **kw):
+            raise RuntimeError("network down")
+            yield  # pragma: no cover
+    events = await _collect(TutorAgent(Boom()).run("array", Profile()))
+    # 回退到预烘 explanation_md（含“数组”）
+    assert "数组" in events[-1].data["explanation_md"]
+
+
+async def test_visualizer_returns_viz_spec():
+    events = await _collect(VisualizerAgent(FakeLLMClient()).run("sorting", Profile()))
+    assert events[-1].data["viz"]["type"] == "sorting"
+
+
+async def test_quizzer_returns_questions():
+    events = await _collect(QuizzerAgent(FakeLLMClient()).run("array", Profile()))
+    qs = events[-1].data["questions"]
+    assert len(qs) >= 1 and "stem" in qs[0]
+
+
+async def test_agents_handle_missing_resource():
+    for AgentCls in (TutorAgent, VisualizerAgent, QuizzerAgent):
+        events = await _collect(AgentCls(FakeLLMClient()).run("nope", Profile()))
+        assert events[-1].type == "agent_done"

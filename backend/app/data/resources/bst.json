@@ -1,0 +1,10 @@
+{
+  "id": "bst",
+  "explanation_md": "## 二叉搜索树（BST）\n对任意节点：**左子树 < 根 < 右子树**。查找/插入/删除平均 $O(\\log n)$，退化（链状）时 $O(n)$。",
+  "viz": {"type": "tree", "params": {"nodes": [8, 3, 10, 1, 6, 14, 4, 7], "traversal": "inorder"}},
+  "code": {"language": "python", "source": "def search(node, key):\n    while node:\n        if key == node.v:\n            return node\n        node = node.left if key < node.v else node.right\n    return None"},
+  "question_templates": [
+    {"stem": "BST 查找的平均时间复杂度？", "answer": "O(log n)", "difficulty": 2},
+    {"stem": "BST 在什么情况下退化为 O(n)？", "answer": "插入有序序列导致退化成链", "difficulty": 3}
+  ]
+}
