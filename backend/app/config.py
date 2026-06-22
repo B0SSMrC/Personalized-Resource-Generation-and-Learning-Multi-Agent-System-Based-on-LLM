@@ -27,7 +27,11 @@ def build_llm():
             settings.llm_base_url, settings.llm_api_key, settings.llm_model
         )
     if settings.llm_provider == "spark":
-        from app.llm.spark import SparkClient
+        from app.llm.spark import SPARK_BASE_URL, SparkClient
 
-        return SparkClient()
+        return SparkClient(
+            api_password=settings.llm_api_key,
+            model=settings.llm_model or "lite",
+            base_url=settings.llm_base_url or SPARK_BASE_URL,
+        )
     return FakeLLMClient()

@@ -4,8 +4,15 @@ r"""快速自检：用 backend/.env 里的配置真打一次 LLM（chat + stream
     .\.venv\Scripts\python.exe check_llm.py
 """
 import asyncio
+import sys
 
 from app.config import build_llm, settings
+
+# Windows 控制台默认 GBK，强制 UTF-8 以正常打印 emoji/中文
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:  # noqa: BLE001  老环境无 reconfigure 时忽略
+    pass
 
 
 async def main():
@@ -14,8 +21,8 @@ async def main():
     print(f"model    = {settings.llm_model}")
     print(f"api_key  = {'已设置' if settings.llm_api_key else '(空)'}")
 
-    if settings.llm_provider != "openai_compat":
-        print("\n⚠️ 当前 LLM_PROVIDER 不是 openai_compat，仍在用占位/离线模式。")
+    if settings.llm_provider not in ("openai_compat", "spark"):
+        print("\n⚠️ 当前 LLM_PROVIDER 不是在线大模型（openai_compat / spark），仍在用离线/占位模式。")
 
     llm = build_llm()
 
