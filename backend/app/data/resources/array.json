@@ -2,7 +2,7 @@
   "id": "array",
   "explanation_md": "## 数组\n数组是一段**连续内存**上的同类型元素集合，下标访问 $O(1)$，中间插入/删除 $O(n)$。\n\n- 随机访问快\n- 大小通常固定（静态数组）",
   "viz": {"type": "linear", "params": {"structure": "array", "values": [5, 2, 8, 1, 9], "op": "access", "index": 2}},
-  "code": {"language": "python", "source": "arr = [5, 2, 8, 1, 9]\nprint(arr[2])  # O(1) 随机访问\narr.insert(2, 99)  # O(n) 中间插入"},
+  "code": {"language": "python", "source": "arr = [5, 2, 8, 1, 9]\nprint(arr[2])  # O(1) 随机访问\narr.insert(2, 99)  # O(n) 中间插入", "output": "8"},
   "question_templates": [
     {"stem": "长度为 n 的数组，在下标 0 处插入元素的时间复杂度是？", "answer": "O(n)", "difficulty": 1},
     {"stem": "数组随机访问 arr[i] 的时间复杂度是？", "answer": "O(1)", "difficulty": 1}

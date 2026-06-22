@@ -33,6 +33,6 @@ export interface ResourceBundle {
   id: string;
   explanation_md: string;
   viz: { type: string; params: Record<string, any> };
-  code: { language: string; source: string };
+  code: { language: string; source: string; output: string };
   question_templates: { stem: string; answer: string; difficulty: number }[];
 }

@@ -34,6 +34,7 @@ class ChatBody(BaseModel):
 
 class LearnBody(BaseModel):
     kp_id: str
+    agents: list[str] | None = None
 
 
 class CompleteBody(BaseModel):
@@ -77,7 +78,7 @@ def plan():
 
 @app.post("/api/learn")
 def learn(body: LearnBody):
-    return _stream(_coordinator().generate_resources(body.kp_id))
+    return _stream(_coordinator().generate_resources(body.kp_id, body.agents))
 
 
 @app.post("/api/complete")

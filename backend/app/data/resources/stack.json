@@ -2,7 +2,7 @@
   "id": "stack",
   "explanation_md": "## 栈\n后进先出（LIFO）。仅在栈顶进行 push/pop，均为 $O(1)$。常用于括号匹配、函数调用、DFS。",
   "viz": {"type": "linear", "params": {"structure": "stack", "values": [3, 7, 1], "op": "push", "index": 2}},
-  "code": {"language": "python", "source": "s = []\ns.append(1)  # push\ns.append(2)\ns.pop()       # -> 2 (LIFO)"},
+  "code": {"language": "python", "source": "s = []\ns.append(1)  # push\ns.append(2)\ns.pop()       # -> 2 (LIFO)", "output": "pop() -> 2  (栈剩 [1])"},
   "question_templates": [
     {"stem": "栈的 push 和 pop 时间复杂度？", "answer": "均为 O(1)", "difficulty": 1},
     {"stem": "用栈判断括号是否匹配的思路？", "answer": "左括号入栈，右括号出栈匹配，最终栈空则匹配", "difficulty": 2}

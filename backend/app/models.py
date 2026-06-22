@@ -28,6 +28,7 @@ class VizSpec(BaseModel):
 class CodeSnippet(BaseModel):
     language: str = "python"
     source: str = ""
+    output: str = ""
 
 
 class QuestionTemplate(BaseModel):

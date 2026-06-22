@@ -99,7 +99,7 @@ export default function AgentFeed({ events }: { events: AgentEvent[] }) {
 
       {order.length === 0 ? (
         <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/40 p-5 text-center text-sm text-slate-400">
-          点击「开始学习」，讲解 / 可视化 / 出题三个 Agent 将并行协同生成资源。
+          点击「一键协同生成」或各 Tab 内的生成按钮，对应 Agent 即开始工作。
         </div>
       ) : (
         <div className="space-y-2.5">

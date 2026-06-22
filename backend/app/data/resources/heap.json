@@ -2,7 +2,7 @@
   "id": "heap",
   "explanation_md": "## 堆\n完全二叉树，**大顶堆**满足父 ≥ 子。插入/删除堆顶 $O(\\log n)$，常用于优先队列、Top-K、堆排序。\n\n（下图以树形结构示意节点关系。）",
   "viz": {"type": "tree", "params": {"nodes": [10, 5, 8, 2, 4, 7], "traversal": "level"}},
-  "code": {"language": "python", "source": "import heapq\nh = []\nheapq.heappush(h, 3)\nheapq.heappush(h, 1)\nheapq.heappop(h)  # -> 1 (小顶堆)"},
+  "code": {"language": "python", "source": "import heapq\nh = []\nheapq.heappush(h, 3)\nheapq.heappush(h, 1)\nheapq.heappop(h)  # -> 1 (小顶堆)", "output": "heappop() -> 1"},
   "question_templates": [
     {"stem": "堆插入和删除堆顶的时间复杂度？", "answer": "O(log n)", "difficulty": 2},
     {"stem": "求海量数据 Top-K 常用什么数据结构？", "answer": "大小为 K 的堆", "difficulty": 3}

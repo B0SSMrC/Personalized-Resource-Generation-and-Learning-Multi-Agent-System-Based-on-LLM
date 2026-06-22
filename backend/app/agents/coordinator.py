@@ -27,9 +27,20 @@ class Coordinator:
         async for ev in self.planner.run(self.repo.get_profile()):
             yield ev
 
-    async def generate_resources(self, kp_id: str) -> AsyncIterator[AgentEvent]:
+    async def generate_resources(
+        self, kp_id: str, agents: list[str] | None = None
+    ) -> AsyncIterator[AgentEvent]:
+        """并行运行选定的资源 Agent。agents=None 时运行全部三个（协同）。"""
         profile = self.repo.get_profile()
-        agents = [self.tutor, self.visualizer, self.quizzer]
+        pool = {
+            "tutor": self.tutor,
+            "visualizer": self.visualizer,
+            "quizzer": self.quizzer,
+        }
+        names = [a for a in (agents or list(pool.keys())) if a in pool]
+        selected = [pool[a] for a in names]
+        if not selected:
+            return
         queue: asyncio.Queue = asyncio.Queue()
 
         async def pump(agent):
@@ -39,9 +50,9 @@ class Coordinator:
             finally:
                 await queue.put(None)  # 结束哨兵
 
-        tasks = [asyncio.create_task(pump(a)) for a in agents]
+        tasks = [asyncio.create_task(pump(a)) for a in selected]
         finished = 0
-        while finished < len(agents):
+        while finished < len(selected):
             ev = await queue.get()
             if ev is None:
                 finished += 1

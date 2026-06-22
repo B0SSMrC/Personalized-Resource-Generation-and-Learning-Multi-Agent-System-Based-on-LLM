@@ -2,7 +2,7 @@
   "id": "linked_list",
   "explanation_md": "## 链表\n由节点串联而成，每个节点存**值**与**指向下一个节点的指针**。\n\n- 头插/删除 $O(1)$\n- 随机访问 $O(n)$（需从头遍历）\n- 不要求连续内存",
   "viz": {"type": "linear", "params": {"structure": "linked_list", "values": [5, 2, 8, 1], "op": "traverse", "index": 1}},
-  "code": {"language": "python", "source": "class Node:\n    def __init__(self, v):\n        self.v, self.next = v, None\n\nhead = Node(5)\nhead.next = Node(2)  # 5 -> 2"},
+  "code": {"language": "python", "source": "class Node:\n    def __init__(self, v):\n        self.v, self.next = v, None\n\nhead = Node(5)\nhead.next = Node(2)  # 5 -> 2", "output": "链表: 5 -> 2"},
   "question_templates": [
     {"stem": "链表在已知节点处删除的时间复杂度？", "answer": "O(1)", "difficulty": 2},
     {"stem": "链表与数组相比，最大的劣势是什么？", "answer": "随机访问慢，为 O(n)", "difficulty": 2}

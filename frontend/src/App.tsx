@@ -6,9 +6,11 @@ import ProfileChat from "./components/ProfileChat";
 import AgentFeed from "./components/AgentFeed";
 import ResourcePanel from "./components/ResourcePanel";
 import KnowledgeGraph from "./components/KnowledgeGraph";
-import { IconReplay, IconRoute } from "./components/icons";
+import { IconRoute, IconSparkles } from "./components/icons";
 
 type View = "profile" | "graph" | "workbench";
+type AgentName = "tutor" | "visualizer" | "quizzer";
+const ALL_AGENTS: AgentName[] = ["tutor", "visualizer", "quizzer"];
 
 function lastDone(events: AgentEvent[], agent: string): AgentEvent | undefined {
   for (let i = events.length - 1; i >= 0; i--) {
@@ -22,9 +24,10 @@ export default function App() {
   const [view, setView] = useState<View>("profile");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [graph, setGraph] = useState<Graph | null>(null);
-  // 每个知识点的生成结果独立缓存 —— 切换模块不丢失
+  // 每个知识点的生成结果独立缓存
   const [eventsByKp, setEventsByKp] = useState<Record<string, AgentEvent[]>>({});
-  const [busyKp, setBusyKp] = useState<string | null>(null);
+  // 正在生成的 (知识点:Agent)，用于分离的生成状态
+  const [busy, setBusy] = useState<Set<string>>(new Set());
   const [kpId, setKpId] = useState("array");
   const [path, setPath] = useState<string[]>([]);
   const [rationale, setRationale] = useState("");
@@ -34,17 +37,34 @@ export default function App() {
     getJSON<Graph>("/knowledge-graph").then(setGraph).catch(console.error);
   }, []);
 
-  // 打开知识点：命中缓存则直接展示；未缓存（或强制）则现场生成
-  async function learn(id: string = kpId, force = false) {
+  // 仅导航，不生成（由人为控制是否生成）
+  function openKp(id: string) {
     setKpId(id);
     setView("workbench");
-    if (!force && (eventsByKp[id]?.length ?? 0) > 0) return; // 命中缓存，无需重生成
-    setBusyKp(id);
-    setEventsByKp((prev) => ({ ...prev, [id]: [] }));
-    await streamSSE("/learn", { kp_id: id }, (ev) =>
+  }
+
+  // 生成指定 Agent 的资源（讲解/动画/练习可分别触发）
+  async function generate(id: string, agents: AgentName[]) {
+    setKpId(id);
+    setView("workbench");
+    setBusy((prev) => {
+      const s = new Set(prev);
+      agents.forEach((a) => s.add(`${id}:${a}`));
+      return s;
+    });
+    // 仅清空将要重新生成的 Agent 事件，保留其它
+    setEventsByKp((prev) => ({
+      ...prev,
+      [id]: (prev[id] ?? []).filter((e) => !agents.includes(e.agent as AgentName)),
+    }));
+    await streamSSE("/learn", { kp_id: id, agents }, (ev) =>
       setEventsByKp((prev) => ({ ...prev, [id]: [...(prev[id] ?? []), ev] })),
     ).catch(console.error);
-    setBusyKp(null);
+    setBusy((prev) => {
+      const s = new Set(prev);
+      agents.forEach((a) => s.delete(`${id}:${a}`));
+      return s;
+    });
   }
 
   async function plan() {
@@ -63,7 +83,12 @@ export default function App() {
   }
 
   const events = eventsByKp[kpId] ?? [];
-  const busy = busyKp === kpId;
+  const generating = {
+    tutor: busy.has(`${kpId}:tutor`),
+    visualizer: busy.has(`${kpId}:visualizer`),
+    quizzer: busy.has(`${kpId}:quizzer`),
+  };
+  const anyBusy = generating.tutor || generating.visualizer || generating.quizzer;
   const explanation = lastDone(events, "tutor");
   const viz = lastDone(events, "visualizer");
   const quiz = lastDone(events, "quizzer");
@@ -80,7 +105,7 @@ export default function App() {
           path={path}
           kpId={kpId}
           onPlan={plan}
-          onPickKp={(id) => learn(id)}
+          onPickKp={openKp}
         />
       </aside>
 
@@ -127,11 +152,7 @@ export default function App() {
                 </div>
               )}
               <div className="rounded-2xl border border-violet-100 bg-white p-2 shadow-soft">
-                <KnowledgeGraph
-                  graph={graph}
-                  path={path}
-                  onSelect={(id) => learn(id)}
-                />
+                <KnowledgeGraph graph={graph} path={path} onSelect={openKp} />
               </div>
             </section>
           )}
@@ -152,12 +173,12 @@ export default function App() {
                   <span className="font-semibold text-indigo-950">{currentName}</span>
                 </span>
                 <button
-                  onClick={() => learn(kpId, true)}
-                  disabled={busy}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:brightness-110 disabled:opacity-60"
+                  onClick={() => generate(kpId, ALL_AGENTS)}
+                  disabled={anyBusy}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:brightness-110 disabled:opacity-60"
                 >
-                  <IconReplay className="h-4 w-4" />
-                  {busy ? "生成中…" : events.length ? "重新生成" : "开始学习"}
+                  <IconSparkles className="h-4 w-4" />
+                  {anyBusy ? "协同生成中…" : "一键协同生成"}
                 </button>
               </header>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -170,6 +191,8 @@ export default function App() {
                     viz={viz?.data?.viz ?? null}
                     questions={quiz?.data?.questions ?? []}
                     kpId={kpId}
+                    generating={generating}
+                    onGenerate={(agent) => generate(kpId, [agent])}
                     onComplete={complete}
                   />
                 </div>
