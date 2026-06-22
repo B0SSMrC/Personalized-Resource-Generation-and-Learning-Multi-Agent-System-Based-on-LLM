@@ -1,7 +1,7 @@
 {
   "id": "dynamic_programming",
   "explanation_md": "## 动态规划\n把问题拆成**重叠子问题**，用状态转移方程自底向上求解并记忆化。\n\n斐波那契：$dp[i] = dp[i-1] + dp[i-2]$。下方动画即为 dp 数组的填表结果。",
-  "viz": {"type": "linear", "params": {"structure": "array", "values": [1, 1, 2, 3, 5, 8, 13], "op": "access", "index": 6}},
+  "viz": {"type": "linear", "params": {"structure": "array", "values": [1, 1, 2, 3, 5, 8, 13], "op": "access", "index": 6, "gen": "fib"}},
   "code": {"language": "python", "source": "def fib(n):\n    dp = [0] * (n + 1)\n    dp[1] = 1\n    for i in range(2, n + 1):\n        dp[i] = dp[i - 1] + dp[i - 2]\n    return dp[n]"},
   "question_templates": [
     {"stem": "动态规划适用的两个核心特征是？", "answer": "最优子结构与重叠子问题", "difficulty": 3},
