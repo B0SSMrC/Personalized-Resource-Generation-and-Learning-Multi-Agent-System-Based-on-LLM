@@ -15,11 +15,12 @@ dist/
 .vite/
 *.local
 
-# Editor / OS
+# Editor / OS / tooling
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+.claude/
 
 # Logs
 *.log

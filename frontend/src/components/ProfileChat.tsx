@@ -1,0 +1,81 @@
+import { useState } from "react";
+import { streamSSE } from "../api/client";
+import type { Profile } from "../types";
+
+interface Msg {
+  role: "user" | "agent";
+  text: string;
+}
+
+export default function ProfileChat({
+  onProfile,
+}: {
+  onProfile: (p: Profile) => void;
+}) {
+  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function send() {
+    const text = input.trim();
+    if (!text || busy) return;
+    setInput("");
+    setMsgs((m) => [...m, { role: "user", text }]);
+    setBusy(true);
+    let agentText = "";
+    setMsgs((m) => [...m, { role: "agent", text: "" }]);
+    await streamSSE("/chat", { message: text }, (ev) => {
+      if (ev.type === "token") {
+        agentText += ev.content;
+        setMsgs((m) => {
+          const copy = [...m];
+          copy[copy.length - 1] = { role: "agent", text: agentText };
+          return copy;
+        });
+      } else if (ev.type === "agent_done" && ev.data?.profile) {
+        onProfile(ev.data.profile as Profile);
+      }
+    }).catch((e) => console.error(e));
+    setBusy(false);
+  }
+
+  return (
+    <div className="flex h-full flex-col rounded-lg border bg-white">
+      <div className="border-b p-3 text-sm font-semibold">对话式学习画像构建</div>
+      <div className="flex-1 space-y-2 overflow-y-auto p-3">
+        {msgs.length === 0 && (
+          <div className="text-sm text-gray-400">
+            试着说：「我学过数组和链表，但动态规划很弱，想准备数据结构期末考，喜欢看动画。」
+          </div>
+        )}
+        {msgs.map((m, i) => (
+          <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
+            <span
+              className={`inline-block rounded-lg px-3 py-1.5 text-sm ${
+                m.role === "user" ? "bg-blue-500 text-white" : "bg-gray-100"
+              }`}
+            >
+              {m.text || "…"}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2 border-t p-2">
+        <input
+          className="flex-1 rounded border px-2 py-1 text-sm"
+          value={input}
+          placeholder="说说你的基础、目标和偏好…"
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && send()}
+        />
+        <button
+          onClick={send}
+          disabled={busy}
+          className="rounded bg-blue-500 px-3 py-1 text-sm text-white disabled:opacity-50"
+        >
+          发送
+        </button>
+      </div>
+    </div>
+  );
+}
