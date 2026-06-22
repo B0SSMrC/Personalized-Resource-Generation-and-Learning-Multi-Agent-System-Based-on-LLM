@@ -36,7 +36,7 @@ export default function GraphAnim({ params }: { params: Record<string, any> }) {
   const pos = useMemo(() => {
     const p: Record<string, { x: number; y: number }> = {};
     nodes.forEach((n, i) => {
-      const ang = (i / nodes.length) * Math.PI * 2;
+      const ang = (i / nodes.length) * Math.PI * 2 - Math.PI / 2;
       p[n] = { x: 150 + 100 * Math.cos(ang), y: 120 + 90 * Math.sin(ang) };
     });
     return p;
@@ -47,7 +47,7 @@ export default function GraphAnim({ params }: { params: Record<string, any> }) {
     setStep(0);
     const t = setInterval(
       () => setStep((s) => (s + 1 <= order.length ? s + 1 : s)),
-      600,
+      650,
     );
     return () => clearInterval(t);
   }, [order.length]);
@@ -55,39 +55,48 @@ export default function GraphAnim({ params }: { params: Record<string, any> }) {
 
   return (
     <div>
-      <svg width="100%" height="240" viewBox="0 0 300 240">
-        {edges.map(([a, b], i) => (
-          <line
-            key={i}
-            x1={pos[a].x}
-            y1={pos[a].y}
-            x2={pos[b].x}
-            y2={pos[b].y}
-            stroke="#cbd5e1"
-          />
-        ))}
-        {nodes.map((n) => (
-          <g key={n}>
-            <circle
-              cx={pos[n].x}
-              cy={pos[n].y}
-              r="16"
-              fill={visited.has(n) ? "#3b82f6" : "#e2e8f0"}
+      <div className="rounded-xl bg-slate-50 p-3">
+        <svg width="100%" height="240" viewBox="0 0 300 240">
+          {edges.map(([a, b], i) => (
+            <line
+              key={i}
+              x1={pos[a].x}
+              y1={pos[a].y}
+              x2={pos[b].x}
+              y2={pos[b].y}
+              stroke="#ddd6fe"
+              strokeWidth={2}
             />
-            <text
-              x={pos[n].x}
-              y={pos[n].y + 4}
-              textAnchor="middle"
-              fontSize="12"
-              fill={visited.has(n) ? "white" : "#334155"}
-            >
-              {n}
-            </text>
-          </g>
-        ))}
-      </svg>
-      <div className="mt-1 text-sm text-gray-500">
-        BFS 顺序：{order.slice(0, step).join(" → ")}
+          ))}
+          {nodes.map((n) => (
+            <g key={n}>
+              <circle
+                cx={pos[n].x}
+                cy={pos[n].y}
+                r="16"
+                fill={visited.has(n) ? "#7c3aed" : "#f5f3ff"}
+                stroke={visited.has(n) ? "#7c3aed" : "#ddd6fe"}
+                strokeWidth={1.5}
+              />
+              <text
+                x={pos[n].x}
+                y={pos[n].y + 4}
+                textAnchor="middle"
+                fontSize="12"
+                fontWeight={visited.has(n) ? 600 : 400}
+                fill={visited.has(n) ? "white" : "#64748b"}
+              >
+                {n}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
+      <div className="mt-2 text-xs text-slate-500">
+        BFS 遍历顺序：
+        <span className="font-medium text-violet-700">
+          {order.slice(0, step).join(" → ")}
+        </span>
       </div>
     </div>
   );

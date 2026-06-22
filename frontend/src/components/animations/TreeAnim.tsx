@@ -54,32 +54,40 @@ export default function TreeAnim({ params }: { params: Record<string, any> }) {
 
   return (
     <div>
-      <svg width="100%" height="240" viewBox="0 0 440 240">
-        {links.map(([a, b], i) => (
-          <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#cbd5e1" />
-        ))}
-        {nodes.map((n) => (
-          <g key={n.v}>
-            <circle
-              cx={n.x}
-              cy={n.y}
-              r="16"
-              fill={highlighted.has(n.v) ? "#3b82f6" : "#e2e8f0"}
-            />
-            <text
-              x={n.x}
-              y={n.y + 4}
-              textAnchor="middle"
-              fontSize="12"
-              fill={highlighted.has(n.v) ? "white" : "#334155"}
-            >
-              {n.v}
-            </text>
-          </g>
-        ))}
-      </svg>
-      <div className="mt-1 text-sm text-gray-500">
-        中序遍历高亮顺序（升序）：{order.slice(0, step).join(" → ")}
+      <div className="rounded-xl bg-slate-50 p-3">
+        <svg width="100%" height="240" viewBox="0 0 440 240">
+          {links.map(([a, b], i) => (
+            <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#ddd6fe" strokeWidth={2} />
+          ))}
+          {nodes.map((n) => (
+            <g key={n.v}>
+              <circle
+                cx={n.x}
+                cy={n.y}
+                r="16"
+                fill={highlighted.has(n.v) ? "#7c3aed" : "#f5f3ff"}
+                stroke={highlighted.has(n.v) ? "#7c3aed" : "#ddd6fe"}
+                strokeWidth={1.5}
+              />
+              <text
+                x={n.x}
+                y={n.y + 4}
+                textAnchor="middle"
+                fontSize="12"
+                fontWeight={highlighted.has(n.v) ? 600 : 400}
+                fill={highlighted.has(n.v) ? "white" : "#64748b"}
+              >
+                {n.v}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
+      <div className="mt-2 text-xs text-slate-500">
+        中序遍历高亮顺序（升序）：
+        <span className="font-medium text-violet-700">
+          {order.slice(0, step).join(" → ")}
+        </span>
       </div>
     </div>
   );

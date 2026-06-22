@@ -43,7 +43,7 @@ export default function KnowledgeGraph({ graph, path, onSelect }: Props) {
       .selectAll("line")
       .data(links)
       .join("line")
-      .attr("stroke", (d: any) => (onPath(d) ? "#3b82f6" : "#cbd5e1"))
+      .attr("stroke", (d: any) => (onPath(d) ? "#7c3aed" : "#e2e8f0"))
       .attr("stroke-width", (d: any) => (onPath(d) ? 3 : 1.5));
 
     const node = svg
@@ -57,8 +57,9 @@ export default function KnowledgeGraph({ graph, path, onSelect }: Props) {
     node
       .append("circle")
       .attr("r", 18)
-      .attr("fill", (d: any) => (pathSet.has(d.id) ? "#3b82f6" : "#e2e8f0"))
-      .attr("stroke", "#94a3b8");
+      .attr("fill", (d: any) => (pathSet.has(d.id) ? "#7c3aed" : "#f5f3ff"))
+      .attr("stroke", (d: any) => (pathSet.has(d.id) ? "#7c3aed" : "#ddd6fe"))
+      .attr("stroke-width", 1.5);
 
     // 标签放在圆圈下方，避免长名称（如“查找与哈希”）溢出
     node
@@ -68,7 +69,7 @@ export default function KnowledgeGraph({ graph, path, onSelect }: Props) {
       .attr("dy", 33)
       .attr("font-size", 12)
       .attr("font-weight", (d: any) => (pathSet.has(d.id) ? "bold" : "normal"))
-      .attr("fill", (d: any) => (pathSet.has(d.id) ? "#2563eb" : "#334155"));
+      .attr("fill", (d: any) => (pathSet.has(d.id) ? "#6d28d9" : "#475569"));
 
     sim.on("tick", () => {
       // 夹住坐标，确保节点与下方标签都不会被裁剪

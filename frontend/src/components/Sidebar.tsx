@@ -1,5 +1,12 @@
 import type { ReactNode } from "react";
 import type { Graph, Profile } from "../types";
+import {
+  IconChat,
+  IconChevron,
+  IconDashboard,
+  IconGraph,
+  IconSparkles,
+} from "./icons";
 
 type View = "profile" | "graph" | "workbench";
 
@@ -14,6 +21,12 @@ interface Props {
   onPickKp: (id: string) => void;
 }
 
+const META: { id: View; label: string; icon: (p: { className?: string }) => ReactNode }[] = [
+  { id: "profile", label: "对话画像", icon: IconChat },
+  { id: "graph", label: "知识图谱", icon: IconGraph },
+  { id: "workbench", label: "学习工作台", icon: IconDashboard },
+];
+
 export default function Sidebar({
   active,
   onSelect,
@@ -27,118 +40,167 @@ export default function Sidebar({
   const nameOf = (id: string) =>
     graph?.points.find((p) => p.id === id)?.name ?? id;
 
-  const Section = ({
-    id,
-    label,
-    children,
-  }: {
-    id: View;
-    label: string;
-    children: ReactNode;
-  }) => {
-    const open = active === id;
-    return (
-      <div className="border-b">
-        <button
-          onClick={() => onSelect(id)}
-          className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium ${
-            open ? "bg-blue-50 text-blue-700" : "hover:bg-gray-50"
-          }`}
-        >
-          <span>{label}</span>
-          <span className="text-xs text-gray-400">{open ? "▼" : "▶"}</span>
-        </button>
-        {open && <div className="px-4 pb-4">{children}</div>}
-      </div>
-    );
-  };
-
-  const Tag = ({ text, color }: { text: string; color: string }) => (
-    <span className={`mb-1 mr-1 inline-block rounded px-1.5 py-0.5 text-xs ${color}`}>
+  const Tag = ({ text, tone }: { text: string; tone: "ok" | "weak" }) => (
+    <span
+      className={`mb-1 mr-1 inline-block rounded-md px-2 py-0.5 text-xs font-medium ${
+        tone === "ok"
+          ? "bg-emerald-400/15 text-emerald-200 ring-1 ring-emerald-300/20"
+          : "bg-rose-400/15 text-rose-200 ring-1 ring-rose-300/20"
+      }`}
+    >
       {text}
     </span>
   );
 
-  return (
-    <div>
-      <div className="border-b px-4 py-4">
-        <div className="text-lg font-bold">🎓 个性化学习</div>
-        <div className="mt-0.5 text-xs text-gray-500">
-          多智能体系统 · 数据结构与算法
-        </div>
-      </div>
-
-      <Section id="profile" label="① 对话画像">
-        <div className="text-xs text-gray-600">目标：{profile?.goal || "—"}</div>
-        <div className="mt-2 text-xs text-gray-400">已掌握</div>
+  const bodyFor = (id: View): ReactNode => {
+    if (id === "profile")
+      return (
         <div>
-          {profile?.mastered.length ? (
-            profile.mastered.map((m) => (
-              <Tag key={m} text={nameOf(m)} color="bg-green-100 text-green-700" />
-            ))
-          ) : (
-            <span className="text-xs text-gray-300">—</span>
-          )}
-        </div>
-        <div className="mt-1 text-xs text-gray-400">薄弱点</div>
-        <div>
-          {profile?.weak_points.length ? (
-            profile.weak_points.map((m) => (
-              <Tag key={m} text={nameOf(m)} color="bg-red-100 text-red-700" />
-            ))
-          ) : (
-            <span className="text-xs text-gray-300">—</span>
-          )}
-        </div>
-        <button
-          onClick={() => onSelect("profile")}
-          className="mt-3 w-full rounded bg-blue-500 px-2 py-1 text-xs text-white"
-        >
-          进入对话
-        </button>
-      </Section>
-
-      <Section id="graph" label="② 知识图谱">
-        <button
-          onClick={onPlan}
-          className="w-full rounded bg-blue-500 px-2 py-1 text-xs text-white"
-        >
-          生成个性化学习路径
-        </button>
-        {path.length > 0 ? (
-          <ol className="mt-2 space-y-1">
-            {path.map((id, i) => (
-              <li key={id} className="text-xs text-gray-600">
-                {i + 1}. {nameOf(id)}
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <div className="mt-2 text-xs text-gray-400">
-            点击上方按钮生成推荐顺序
+          <div className="text-[11px] uppercase tracking-wider text-violet-300/70">
+            学习目标
           </div>
-        )}
-      </Section>
-
-      <Section id="workbench" label="③ 学习工作台">
-        <div className="text-xs text-gray-400">点击知识点直接学习：</div>
-        <ul className="mt-1 space-y-0.5">
+          <div className="mt-1 text-sm text-violet-50">{profile?.goal || "—"}</div>
+          <div className="mt-3 text-[11px] uppercase tracking-wider text-violet-300/70">
+            已掌握
+          </div>
+          <div className="mt-1">
+            {profile?.mastered.length ? (
+              profile.mastered.map((m) => <Tag key={m} text={nameOf(m)} tone="ok" />)
+            ) : (
+              <span className="text-xs text-violet-300/50">尚无</span>
+            )}
+          </div>
+          <div className="mt-2 text-[11px] uppercase tracking-wider text-violet-300/70">
+            薄弱点
+          </div>
+          <div className="mt-1">
+            {profile?.weak_points.length ? (
+              profile.weak_points.map((m) => (
+                <Tag key={m} text={nameOf(m)} tone="weak" />
+              ))
+            ) : (
+              <span className="text-xs text-violet-300/50">尚无</span>
+            )}
+          </div>
+        </div>
+      );
+    if (id === "graph")
+      return (
+        <div>
+          <button
+            onClick={onPlan}
+            className="w-full rounded-lg bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-violet-900/40 transition hover:brightness-110"
+          >
+            生成个性化学习路径
+          </button>
+          {path.length > 0 ? (
+            <ol className="mt-3 space-y-1">
+              {path.map((id, i) => (
+                <li key={id} className="flex items-center gap-2 text-xs text-violet-100">
+                  <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-white/15 text-[10px] font-semibold">
+                    {i + 1}
+                  </span>
+                  {nameOf(id)}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="mt-2 text-xs text-violet-300/60">
+              点击上方按钮生成推荐顺序
+            </p>
+          )}
+        </div>
+      );
+    return (
+      <div>
+        <div className="mb-1.5 text-[11px] uppercase tracking-wider text-violet-300/70">
+          点击知识点直接学习
+        </div>
+        <ul className="space-y-0.5">
           {graph?.points.map((p) => (
             <li key={p.id}>
               <button
                 onClick={() => onPickKp(p.id)}
-                className={`w-full rounded px-2 py-1 text-left text-xs ${
+                className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition ${
                   kpId === p.id
-                    ? "bg-blue-100 font-medium text-blue-700"
-                    : "hover:bg-gray-100"
+                    ? "bg-white/15 font-semibold text-white"
+                    : "text-violet-200 hover:bg-white/8"
                 }`}
               >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    kpId === p.id ? "bg-cyan-300" : "bg-violet-400/50"
+                  }`}
+                />
                 {p.name}
               </button>
             </li>
           ))}
         </ul>
-      </Section>
+      </div>
+    );
+  };
+
+  return (
+    <div className="sidebar-bg flex h-full flex-col text-violet-100">
+      {/* brand */}
+      <div className="flex items-center gap-3 px-5 py-5">
+        <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-violet-400 to-cyan-400 text-indigo-950 shadow-lg shadow-violet-900/50">
+          <IconSparkles className="h-5 w-5" />
+        </div>
+        <div className="leading-tight">
+          <div className="font-heading text-[15px] font-bold text-white">
+            个性化学习
+          </div>
+          <div className="text-[11px] text-violet-300/80">多智能体系统</div>
+        </div>
+      </div>
+
+      <div className="mx-5 mb-2 h-px bg-white/10" />
+
+      {/* accordion */}
+      <nav className="flex-1 overflow-y-auto px-3 pb-4">
+        {META.map(({ id, label, icon: Icon }) => {
+          const open = active === id;
+          return (
+            <div key={id} className="mb-1">
+              <button
+                onClick={() => onSelect(id)}
+                className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+                  open
+                    ? "bg-white/12 text-white shadow-inner"
+                    : "text-violet-200 hover:bg-white/5"
+                }`}
+              >
+                <span
+                  className={`grid h-8 w-8 place-items-center rounded-lg transition ${
+                    open
+                      ? "bg-gradient-to-br from-violet-400/90 to-cyan-400/90 text-indigo-950"
+                      : "bg-white/5 text-violet-200 group-hover:text-white"
+                  }`}
+                >
+                  <Icon className="h-[18px] w-[18px]" />
+                </span>
+                <span className="flex-1">{label}</span>
+                <IconChevron
+                  className={`h-4 w-4 text-violet-300/70 transition-transform duration-200 ${
+                    open ? "rotate-90" : ""
+                  }`}
+                />
+              </button>
+              {open && (
+                <div className="animate-rise mt-1 rounded-xl bg-black/15 px-3 py-3">
+                  {bodyFor(id)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </nav>
+
+      <div className="px-5 py-3 text-[11px] text-violet-300/50">
+        数据结构与算法 · 讯飞星火驱动
+      </div>
     </div>
   );
 }

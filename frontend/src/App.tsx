@@ -6,6 +6,7 @@ import ProfileChat from "./components/ProfileChat";
 import AgentFeed from "./components/AgentFeed";
 import ResourcePanel from "./components/ResourcePanel";
 import KnowledgeGraph from "./components/KnowledgeGraph";
+import { IconReplay, IconRoute } from "./components/icons";
 
 type View = "profile" | "graph" | "workbench";
 
@@ -55,7 +56,7 @@ export default function App() {
     const updated = await postJSON<Profile>("/complete", { kp_id: id });
     setProfile(updated);
     await plan();
-    setView("graph"); // 展示重规划后的路径
+    setView("graph");
   }
 
   const explanation = lastDone(events, "tutor");
@@ -64,8 +65,8 @@ export default function App() {
   const currentName = graph?.points.find((p) => p.id === kpId)?.name ?? kpId;
 
   return (
-    <div className="flex h-screen text-gray-800">
-      <aside className="w-64 shrink-0 overflow-y-auto border-r bg-white">
+    <div className="flex h-screen overflow-hidden">
+      <aside className="w-64 shrink-0">
         <Sidebar
           active={view}
           onSelect={setView}
@@ -78,65 +79,99 @@ export default function App() {
         />
       </aside>
 
-      <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
-        {view === "profile" && (
-          <div>
-            <h2 className="mb-3 text-xl font-bold">① 对话式学习画像构建</h2>
-            <div className="h-[80vh]">
-              <ProfileChat onProfile={setProfile} />
-            </div>
-          </div>
-        )}
-
-        {view === "graph" && graph && (
-          <div>
-            <h2 className="mb-3 text-xl font-bold">② 知识图谱与个性化路径</h2>
-            {rationale && (
-              <p className="mb-3 rounded-lg bg-blue-50 p-3 text-sm leading-relaxed text-gray-700">
-                {rationale}
-              </p>
-            )}
-            <div className="rounded-lg border bg-white">
-              <KnowledgeGraph
-                graph={graph}
-                path={path}
-                onSelect={(id) => learn(id)}
-              />
-            </div>
-          </div>
-        )}
-
-        {view === "workbench" && (
-          <div>
-            <div className="mb-3 flex items-center gap-3">
-              <h2 className="text-xl font-bold">③ 学习工作台</h2>
-              <span className="rounded bg-white px-2 py-0.5 text-sm text-gray-500 shadow-sm">
-                当前：{currentName}
-              </span>
-              <button
-                onClick={() => learn(kpId)}
-                disabled={busy}
-                className="rounded bg-blue-500 px-3 py-1 text-sm text-white disabled:opacity-50"
-              >
-                {busy ? "生成中…" : events.length ? "重新生成" : "开始学习"}
-              </button>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="min-w-0">
-                <AgentFeed events={events} />
+      <main className="app-bg flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-6xl px-8 py-7">
+          {view === "profile" && (
+            <section>
+              <header className="mb-5">
+                <div className="text-xs font-semibold uppercase tracking-widest text-violet-500">
+                  模块 01
+                </div>
+                <h1 className="mt-1 font-heading text-3xl font-bold">
+                  <span className="text-gradient">对话式</span>学习画像构建
+                </h1>
+                <p className="mt-1 text-sm text-slate-500">
+                  与画像 Agent 自然对话，系统实时构建你的个性化学习画像。
+                </p>
+              </header>
+              <div className="h-[76vh]">
+                <ProfileChat onProfile={setProfile} />
               </div>
-              <div className="col-span-2 min-w-0">
-                <ResourcePanel
-                  explanationMd={explanation?.data?.explanation_md ?? ""}
-                  viz={viz?.data?.viz ?? null}
-                  questions={quiz?.data?.questions ?? []}
-                  kpId={kpId}
-                  onComplete={complete}
+            </section>
+          )}
+
+          {view === "graph" && graph && (
+            <section>
+              <header className="mb-5">
+                <div className="text-xs font-semibold uppercase tracking-widest text-violet-500">
+                  模块 02
+                </div>
+                <h1 className="mt-1 font-heading text-3xl font-bold">
+                  知识图谱与<span className="text-gradient">个性化路径</span>
+                </h1>
+                <p className="mt-1 text-sm text-slate-500">
+                  规划 Agent 依据先修关系与你的画像，推荐最优学习顺序。
+                </p>
+              </header>
+              {rationale && (
+                <div className="mb-4 flex gap-3 rounded-2xl border border-violet-100 bg-white/70 p-4 shadow-soft backdrop-blur">
+                  <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-50 text-violet-600">
+                    <IconRoute className="h-5 w-5" />
+                  </span>
+                  <p className="text-sm leading-relaxed text-slate-600">{rationale}</p>
+                </div>
+              )}
+              <div className="rounded-2xl border border-violet-100 bg-white p-2 shadow-soft">
+                <KnowledgeGraph
+                  graph={graph}
+                  path={path}
+                  onSelect={(id) => learn(id)}
                 />
               </div>
-            </div>
-          </div>
-        )}
+            </section>
+          )}
+
+          {view === "workbench" && (
+            <section>
+              <header className="mb-5 flex flex-wrap items-center gap-3">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-widest text-violet-500">
+                    模块 03
+                  </div>
+                  <h1 className="mt-1 font-heading text-3xl font-bold">
+                    学习<span className="text-gradient">工作台</span>
+                  </h1>
+                </div>
+                <span className="ml-auto rounded-full border border-violet-100 bg-white px-3 py-1 text-sm text-slate-500 shadow-soft">
+                  当前知识点 ·{" "}
+                  <span className="font-semibold text-indigo-950">{currentName}</span>
+                </span>
+                <button
+                  onClick={() => learn(kpId)}
+                  disabled={busy}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:brightness-110 disabled:opacity-60"
+                >
+                  <IconReplay className="h-4 w-4" />
+                  {busy ? "生成中…" : events.length ? "重新生成" : "开始学习"}
+                </button>
+              </header>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div className="min-w-0 lg:col-span-1">
+                  <AgentFeed events={events} />
+                </div>
+                <div className="min-w-0 lg:col-span-2">
+                  <ResourcePanel
+                    explanationMd={explanation?.data?.explanation_md ?? ""}
+                    viz={viz?.data?.viz ?? null}
+                    questions={quiz?.data?.questions ?? []}
+                    kpId={kpId}
+                    onComplete={complete}
+                  />
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
       </main>
     </div>
   );
