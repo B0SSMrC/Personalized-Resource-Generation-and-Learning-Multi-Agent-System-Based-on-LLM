@@ -112,11 +112,13 @@
   @apply my-4 border-slate-200;
 }
 .md table {
-  @apply my-3 w-full text-sm;
+  @apply my-3 w-full border-collapse text-sm;
 }
-.md th,
+.md th {
+  @apply border border-slate-200 bg-violet-50 px-3 py-2 text-left font-semibold text-indigo-950;
+}
 .md td {
-  @apply border border-slate-200 px-2 py-1;
+  @apply border border-slate-200 px-3 py-2;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { getJSON } from "../api/client";
@@ -70,7 +71,10 @@ export default function ResourcePanel({
         {tab === "explain" && (
           <div className="md">
             {explanationMd ? (
-              <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+              <Markdown
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+              >
                 {explanationMd}
               </Markdown>
             ) : (
