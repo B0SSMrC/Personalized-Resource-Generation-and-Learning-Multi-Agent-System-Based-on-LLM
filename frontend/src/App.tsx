@@ -152,7 +152,12 @@ export default function App() {
                 </div>
               )}
               <div className="rounded-2xl border border-violet-100 bg-white p-2 shadow-soft">
-                <KnowledgeGraph graph={graph} path={path} onSelect={openKp} />
+                <KnowledgeGraph
+                  graph={graph}
+                  path={path}
+                  profile={profile}
+                  onSelect={openKp}
+                />
               </div>
             </section>
           )}

@@ -1,103 +1,118 @@
-import { useEffect, useRef } from "react";
-import * as d3 from "d3";
-import type { Graph } from "../types";
+import { useMemo } from "react";
+import type { Graph, Profile } from "../types";
+import {
+  computeTiers,
+  nodeStatus,
+  unmetPrereqs,
+  NODE_W,
+  NODE_H,
+} from "../lib/tiers";
+import type { NodeStatus } from "../lib/tiers";
+import { IconCheck, IconLock } from "./icons";
 
 interface Props {
   graph: Graph;
   path: string[];
+  profile: Profile | null;
   onSelect: (id: string) => void;
 }
 
-export default function KnowledgeGraph({ graph, path, onSelect }: Props) {
-  const ref = useRef<SVGSVGElement | null>(null);
+const STATUS_CARD: Record<NodeStatus, string> = {
+  mastered: "border-emerald-200 bg-emerald-50/70 text-emerald-900",
+  ready:
+    "border-violet-300 bg-white text-indigo-950 hover:border-violet-400 hover:shadow-glow",
+  locked: "border-slate-200 bg-slate-50 text-slate-400",
+};
 
-  useEffect(() => {
-    if (!ref.current) return;
-    const W = 760;
-    const H = 520;
-    const PAD = 40;
-    const svg = d3.select(ref.current);
-    svg.selectAll("*").remove();
-    const pathSet = new Set(path);
-
-    const nodes = graph.points.map((p) => ({ ...p })) as any[];
-    const links = graph.edges.map(([s, t]) => ({ source: s, target: t })) as any[];
-
-    const onPath = (d: any) => {
-      const s = d.source.id ?? d.source;
-      const t = d.target.id ?? d.target;
-      return pathSet.has(s) && pathSet.has(t);
-    };
-
-    const sim = d3
-      .forceSimulation(nodes)
-      .force("link", d3.forceLink(links).id((d: any) => d.id).distance(95))
-      .force("charge", d3.forceManyBody().strength(-340))
-      .force("center", d3.forceCenter(W / 2, H / 2))
-      .force("x", d3.forceX(W / 2).strength(0.06))
-      .force("y", d3.forceY(H / 2).strength(0.06))
-      .force("collide", d3.forceCollide(40));
-
-    const link = svg
-      .append("g")
-      .selectAll("line")
-      .data(links)
-      .join("line")
-      .attr("stroke", (d: any) => (onPath(d) ? "#7c3aed" : "#e2e8f0"))
-      .attr("stroke-width", (d: any) => (onPath(d) ? 3 : 1.5));
-
-    const node = svg
-      .append("g")
-      .selectAll("g")
-      .data(nodes)
-      .join("g")
-      .style("cursor", "pointer")
-      .on("click", (_e, d: any) => onSelect(d.id));
-
-    node
-      .append("circle")
-      .attr("r", 18)
-      .attr("fill", (d: any) => (pathSet.has(d.id) ? "#7c3aed" : "#f5f3ff"))
-      .attr("stroke", (d: any) => (pathSet.has(d.id) ? "#7c3aed" : "#ddd6fe"))
-      .attr("stroke-width", 1.5);
-
-    // 标签放在圆圈下方，避免长名称（如“查找与哈希”）溢出
-    node
-      .append("text")
-      .text((d: any) => d.name)
-      .attr("text-anchor", "middle")
-      .attr("dy", 33)
-      .attr("font-size", 12)
-      .attr("font-weight", (d: any) => (pathSet.has(d.id) ? "bold" : "normal"))
-      .attr("fill", (d: any) => (pathSet.has(d.id) ? "#6d28d9" : "#475569"));
-
-    sim.on("tick", () => {
-      // 夹住坐标，确保节点与下方标签都不会被裁剪
-      nodes.forEach((d: any) => {
-        d.x = Math.max(PAD, Math.min(W - PAD, d.x));
-        d.y = Math.max(PAD, Math.min(H - PAD - 16, d.y));
-      });
-      link
-        .attr("x1", (d: any) => d.source.x)
-        .attr("y1", (d: any) => d.source.y)
-        .attr("x2", (d: any) => d.target.x)
-        .attr("y2", (d: any) => d.target.y);
-      node.attr("transform", (d: any) => `translate(${d.x},${d.y})`);
-    });
-
-    return () => {
-      sim.stop();
-    };
-  }, [graph, path, onSelect]);
+export default function KnowledgeGraph({ graph, profile, onSelect }: Props) {
+  const { nodes, posById, width, height } = useMemo(
+    () => computeTiers(graph.points),
+    [graph.points],
+  );
+  const mastered = useMemo(
+    () => new Set(profile?.mastered ?? []),
+    [profile],
+  );
+  const weak = useMemo(() => new Set(profile?.weak_points ?? []), [profile]);
 
   return (
-    <svg
-      ref={ref}
-      width="100%"
-      height="520"
-      viewBox="0 0 760 520"
-      preserveAspectRatio="xMidYMid meet"
-      style={{ display: "block" }}
-    />
+    <div className="w-full overflow-x-auto">
+      <div className="relative mx-auto" style={{ width, height }}>
+        {/* 先修连线层 */}
+        <svg
+          className="pointer-events-none absolute inset-0"
+          width={width}
+          height={height}
+        >
+          {graph.edges.map(([from, to]) => {
+            const a = posById[from];
+            const b = posById[to];
+            if (!a || !b) return null;
+            const x1 = a.x + NODE_W / 2;
+            const y1 = a.y + NODE_H;
+            const x2 = b.x + NODE_W / 2;
+            const y2 = b.y;
+            const dy = (y2 - y1) / 2;
+            return (
+              <path
+                key={`${from}-${to}`}
+                d={`M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`}
+                fill="none"
+                stroke="#e2e8f0"
+                strokeWidth={1.5}
+              />
+            );
+          })}
+        </svg>
+
+        {/* 节点卡 */}
+        {nodes.map(({ point, x, y }) => {
+          const status = nodeStatus(point, mastered);
+          const isWeak = weak.has(point.id);
+          const unmet = unmetPrereqs(point, mastered)
+            .map((id) => graph.points.find((p) => p.id === id)?.name ?? id)
+            .join("、");
+          return (
+            <div
+              key={point.id}
+              className="group absolute"
+              style={{ left: x, top: y, width: NODE_W, height: NODE_H }}
+            >
+              <button
+                onClick={() => onSelect(point.id)}
+                className={`relative flex h-full w-full items-center justify-center rounded-xl border px-2 text-center text-sm font-medium shadow-soft transition ${STATUS_CARD[status]}`}
+              >
+                {status === "mastered" && (
+                  <IconCheck className="mr-1 h-4 w-4 text-emerald-500" />
+                )}
+                {status === "locked" && (
+                  <IconLock className="mr-1 h-3.5 w-3.5 text-slate-400" />
+                )}
+                <span className="truncate">{point.name}</span>
+                {isWeak && (
+                  <span className="absolute -bottom-1.5 -right-1.5 h-3 w-3 rounded-full border-2 border-white bg-rose-500" />
+                )}
+              </button>
+
+              {/* hover 浮层 */}
+              <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-1 hidden w-44 -translate-x-1/2 rounded-lg bg-indigo-950 px-3 py-2 text-xs text-violet-50 shadow-lg group-hover:block">
+                <div className="font-semibold">{point.name}</div>
+                <div className="mt-0.5 text-violet-200/80">
+                  难度 {point.difficulty} · 约 {point.est_minutes} 分钟
+                </div>
+                <div className="mt-0.5 text-violet-200/80">
+                  {status === "mastered"
+                    ? "✅ 已掌握"
+                    : status === "ready"
+                      ? "🔓 可以开始学"
+                      : `🔒 建议先学：${unmet}`}
+                </div>
+                {isWeak && <div className="mt-0.5 text-rose-300">🔴 薄弱点</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
