@@ -98,3 +98,36 @@ async def test_agents_handle_missing_resource():
     for AgentCls in (TutorAgent, VisualizerAgent, QuizzerAgent):
         events = await _collect(AgentCls(FakeLLMClient()).run("nope", Profile()))
         assert events[-1].type == "agent_done"
+
+
+async def test_tutor_strips_whole_markdown_code_fence():
+    """弱模型常把整段回答用 ```markdown ... ``` 包裹，导致前端整块当代码渲染。
+    讲解 Agent 应剥掉外层围栏，输出可正常渲染的 Markdown。"""
+    fenced = "```markdown\n# 二叉树\n正文**重点**\n```"
+    events = await _collect(
+        TutorAgent(FakeLLMClient(responses=[fenced])).run("binary_tree", Profile())
+    )
+    md = events[-1].data["explanation_md"]
+    assert md.startswith("# 二叉树")
+    assert "```" not in md
+
+
+async def test_profiler_normalizes_concept_names_to_ids():
+    """真模型常返回知识点中文名（数组/链表/动态规划），画像须归一成图谱 id，
+    否则 compute_path 的已掌握排除/薄弱优先全部失效。"""
+    inc = {"mastered": ["数组", "链表"], "weak_points": ["动态规划"]}
+    llm = FakeLLMClient(responses=[json.dumps(inc, ensure_ascii=False)])
+    events = await _collect(ProfilerAgent(llm).run("我学过数组链表，动规弱", Profile()))
+    prof = events[-1].data["profile"]
+    assert "array" in prof["mastered"] and "linked_list" in prof["mastered"]
+    assert "数组" not in prof["mastered"]
+    assert prof["weak_points"] == ["dynamic_programming"]
+
+
+async def test_profiler_drops_unknown_concepts():
+    """LLM 瞎编的概念（如“全部内容”）匹配不上任何知识点，应丢弃而非污染画像。"""
+    inc = {"mastered": ["全部内容", "数组"]}
+    llm = FakeLLMClient(responses=[json.dumps(inc, ensure_ascii=False)])
+    events = await _collect(ProfilerAgent(llm).run("x", Profile()))
+    prof = events[-1].data["profile"]
+    assert prof["mastered"] == ["array"]
