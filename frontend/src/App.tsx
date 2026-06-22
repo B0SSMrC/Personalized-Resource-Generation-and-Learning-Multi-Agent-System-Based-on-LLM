@@ -138,8 +138,10 @@ export default function App() {
             </button>
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <AgentFeed events={events} />
-            <div className="col-span-2">
+            <div className="min-w-0">
+              <AgentFeed events={events} />
+            </div>
+            <div className="col-span-2 min-w-0">
               <ResourcePanel
                 explanationMd={explanation?.data?.explanation_md ?? ""}
                 viz={viz?.data?.viz ?? null}

@@ -24,18 +24,27 @@ export default function ProfileChat({
     setBusy(true);
     let agentText = "";
     setMsgs((m) => [...m, { role: "agent", text: "" }]);
+    const set = (t: string) =>
+      setMsgs((m) => {
+        const copy = [...m];
+        copy[copy.length - 1] = { role: "agent", text: t };
+        return copy;
+      });
     await streamSSE("/chat", { message: text }, (ev) => {
-      if (ev.type === "token") {
+      if (ev.type === "agent_start") {
+        set("（画像 Agent 分析中…）");
+      } else if (ev.type === "token") {
         agentText += ev.content;
-        setMsgs((m) => {
-          const copy = [...m];
-          copy[copy.length - 1] = { role: "agent", text: agentText };
-          return copy;
-        });
+        set(agentText);
+      } else if (ev.type === "agent_error") {
+        set(`（画像分析降级：${ev.content}）`);
       } else if (ev.type === "agent_done" && ev.data?.profile) {
         onProfile(ev.data.profile as Profile);
       }
-    }).catch((e) => console.error(e));
+    }).catch((e) => {
+      console.error(e);
+      set("（请求失败：后端没启动或端口不对，请看下方排查）");
+    });
     setBusy(false);
   }
 

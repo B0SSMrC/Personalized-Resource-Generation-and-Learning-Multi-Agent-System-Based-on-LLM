@@ -1,6 +1,8 @@
 import type { AgentEvent } from "../types";
 
-export const API_BASE = "/api";
+// 直接访问后端（后端已开启 CORS: allow_origins=["*"]），不依赖 Vite 代理，
+// 这样 npm run dev / preview 都能用。改端口或部署到别处时改这一行即可。
+export const API_BASE = "http://localhost:8000/api";
 
 export async function getJSON<T>(path: string): Promise<T> {
   const r = await fetch(`${API_BASE}${path}`);

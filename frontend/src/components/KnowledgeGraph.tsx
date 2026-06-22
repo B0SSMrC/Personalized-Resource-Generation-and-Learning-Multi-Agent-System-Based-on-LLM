@@ -13,8 +13,9 @@ export default function KnowledgeGraph({ graph, path, onSelect }: Props) {
 
   useEffect(() => {
     if (!ref.current) return;
-    const W = 640;
-    const H = 420;
+    const W = 760;
+    const H = 520;
+    const PAD = 40;
     const svg = d3.select(ref.current);
     svg.selectAll("*").remove();
     const pathSet = new Set(path);
@@ -30,9 +31,12 @@ export default function KnowledgeGraph({ graph, path, onSelect }: Props) {
 
     const sim = d3
       .forceSimulation(nodes)
-      .force("link", d3.forceLink(links).id((d: any) => d.id).distance(90))
-      .force("charge", d3.forceManyBody().strength(-300))
-      .force("center", d3.forceCenter(W / 2, H / 2));
+      .force("link", d3.forceLink(links).id((d: any) => d.id).distance(95))
+      .force("charge", d3.forceManyBody().strength(-340))
+      .force("center", d3.forceCenter(W / 2, H / 2))
+      .force("x", d3.forceX(W / 2).strength(0.06))
+      .force("y", d3.forceY(H / 2).strength(0.06))
+      .force("collide", d3.forceCollide(40));
 
     const link = svg
       .append("g")
@@ -40,7 +44,7 @@ export default function KnowledgeGraph({ graph, path, onSelect }: Props) {
       .data(links)
       .join("line")
       .attr("stroke", (d: any) => (onPath(d) ? "#3b82f6" : "#cbd5e1"))
-      .attr("stroke-width", (d: any) => (onPath(d) ? 3 : 1));
+      .attr("stroke-width", (d: any) => (onPath(d) ? 3 : 1.5));
 
     const node = svg
       .append("g")
@@ -52,19 +56,26 @@ export default function KnowledgeGraph({ graph, path, onSelect }: Props) {
 
     node
       .append("circle")
-      .attr("r", 22)
+      .attr("r", 18)
       .attr("fill", (d: any) => (pathSet.has(d.id) ? "#3b82f6" : "#e2e8f0"))
       .attr("stroke", "#94a3b8");
 
+    // 标签放在圆圈下方，避免长名称（如“查找与哈希”）溢出
     node
       .append("text")
       .text((d: any) => d.name)
       .attr("text-anchor", "middle")
-      .attr("dy", 4)
-      .attr("font-size", 11)
-      .attr("fill", (d: any) => (pathSet.has(d.id) ? "white" : "#334155"));
+      .attr("dy", 33)
+      .attr("font-size", 12)
+      .attr("font-weight", (d: any) => (pathSet.has(d.id) ? "bold" : "normal"))
+      .attr("fill", (d: any) => (pathSet.has(d.id) ? "#2563eb" : "#334155"));
 
     sim.on("tick", () => {
+      // 夹住坐标，确保节点与下方标签都不会被裁剪
+      nodes.forEach((d: any) => {
+        d.x = Math.max(PAD, Math.min(W - PAD, d.x));
+        d.y = Math.max(PAD, Math.min(H - PAD - 16, d.y));
+      });
       link
         .attr("x1", (d: any) => d.source.x)
         .attr("y1", (d: any) => d.source.y)
@@ -78,5 +89,14 @@ export default function KnowledgeGraph({ graph, path, onSelect }: Props) {
     };
   }, [graph, path, onSelect]);
 
-  return <svg ref={ref} width="100%" height="420" viewBox="0 0 640 420" />;
+  return (
+    <svg
+      ref={ref}
+      width="100%"
+      height="520"
+      viewBox="0 0 760 520"
+      preserveAspectRatio="xMidYMid meet"
+      style={{ display: "block" }}
+    />
+  );
 }
