@@ -96,6 +96,13 @@ export default function App() {
     setView("graph");
   }
 
+  async function resetProfile() {
+    const cleared = await postJSON<Profile>("/profile/reset", {});
+    setProfile(cleared);
+    setPath([]);
+    setRationale("");
+  }
+
   const events = eventsByKp[kpId] ?? [];
   const generating = {
     tutor: busy.has(`${kpId}:tutor`),
@@ -120,6 +127,7 @@ export default function App() {
           kpId={kpId}
           onPlan={plan}
           onPickKp={openKp}
+          onResetProfile={resetProfile}
         />
       </aside>
 

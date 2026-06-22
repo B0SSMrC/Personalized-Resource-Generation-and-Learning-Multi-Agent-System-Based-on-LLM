@@ -45,3 +45,19 @@ def test_complete_marks_mastered():
     r = client.post("/api/complete", json={"kp_id": "array"})
     assert r.status_code == 200
     assert "array" in r.json()["mastered"]
+
+
+def test_reset_profile_clears_everything():
+    from app.data.repository import profile_repo
+    from app.models import Profile
+
+    profile_repo.save_profile(
+        Profile(mastered=["array"], weak_points=["graph"], goal="期末", history=[{"k": 1}])
+    )
+    r = client.post("/api/profile/reset")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["mastered"] == [] and body["weak_points"] == []
+    assert body["goal"] == "" and body["history"] == []
+    # 持久层也已清空
+    assert profile_repo.get_profile().mastered == []

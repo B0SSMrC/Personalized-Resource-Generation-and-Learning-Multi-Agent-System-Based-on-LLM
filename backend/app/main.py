@@ -9,6 +9,7 @@ from app.agents.coordinator import Coordinator
 from app.config import build_llm
 from app.data import repository
 from app.data.repository import profile_repo
+from app.models import Profile
 
 app = FastAPI(title="个性化学习多智能体系统")
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
@@ -55,6 +56,13 @@ def knowledge_graph():
 
 @app.get("/api/profile")
 def get_profile():
+    return profile_repo.get_profile().model_dump()
+
+
+@app.post("/api/profile/reset")
+def reset_profile():
+    """清空当前学习画像（含历史），返回空画像。"""
+    profile_repo.save_profile(Profile())
     return profile_repo.get_profile().model_dump()
 
 

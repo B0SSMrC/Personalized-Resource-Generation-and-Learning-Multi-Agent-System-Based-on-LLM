@@ -19,6 +19,7 @@ interface Props {
   kpId: string;
   onPlan: () => void;
   onPickKp: (id: string) => void;
+  onResetProfile: () => void;
 }
 
 const META: { id: View; label: string; icon: (p: { className?: string }) => ReactNode }[] = [
@@ -36,6 +37,7 @@ export default function Sidebar({
   kpId,
   onPlan,
   onPickKp,
+  onResetProfile,
 }: Props) {
   const nameOf = (id: string) =>
     graph?.points.find((p) => p.id === id)?.name ?? id;
@@ -82,6 +84,16 @@ export default function Sidebar({
               <span className="text-xs text-violet-300/50">尚无</span>
             )}
           </div>
+          <button
+            onClick={() => {
+              if (window.confirm("确定清空当前学习画像吗？此操作不可撤销。")) {
+                onResetProfile();
+              }
+            }}
+            className="mt-4 w-full rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-200 transition hover:bg-rose-500/20"
+          >
+            重置画像
+          </button>
         </div>
       );
     if (id === "graph")
