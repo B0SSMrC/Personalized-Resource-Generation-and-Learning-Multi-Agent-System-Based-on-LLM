@@ -22,26 +22,29 @@ export default function App() {
   const [view, setView] = useState<View>("profile");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [graph, setGraph] = useState<Graph | null>(null);
-  const [events, setEvents] = useState<AgentEvent[]>([]);
+  // 每个知识点的生成结果独立缓存 —— 切换模块不丢失
+  const [eventsByKp, setEventsByKp] = useState<Record<string, AgentEvent[]>>({});
+  const [busyKp, setBusyKp] = useState<string | null>(null);
   const [kpId, setKpId] = useState("array");
   const [path, setPath] = useState<string[]>([]);
   const [rationale, setRationale] = useState("");
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     getJSON<Profile>("/profile").then(setProfile).catch(console.error);
     getJSON<Graph>("/knowledge-graph").then(setGraph).catch(console.error);
   }, []);
 
-  async function learn(id: string = kpId) {
+  // 打开知识点：命中缓存则直接展示；未缓存（或强制）则现场生成
+  async function learn(id: string = kpId, force = false) {
     setKpId(id);
     setView("workbench");
-    setEvents([]);
-    setBusy(true);
+    if (!force && (eventsByKp[id]?.length ?? 0) > 0) return; // 命中缓存，无需重生成
+    setBusyKp(id);
+    setEventsByKp((prev) => ({ ...prev, [id]: [] }));
     await streamSSE("/learn", { kp_id: id }, (ev) =>
-      setEvents((prev) => [...prev, ev]),
+      setEventsByKp((prev) => ({ ...prev, [id]: [...(prev[id] ?? []), ev] })),
     ).catch(console.error);
-    setBusy(false);
+    setBusyKp(null);
   }
 
   async function plan() {
@@ -59,6 +62,8 @@ export default function App() {
     setView("graph");
   }
 
+  const events = eventsByKp[kpId] ?? [];
+  const busy = busyKp === kpId;
   const explanation = lastDone(events, "tutor");
   const viz = lastDone(events, "visualizer");
   const quiz = lastDone(events, "quizzer");
@@ -147,7 +152,7 @@ export default function App() {
                   <span className="font-semibold text-indigo-950">{currentName}</span>
                 </span>
                 <button
-                  onClick={() => learn(kpId)}
+                  onClick={() => learn(kpId, true)}
                   disabled={busy}
                   className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:brightness-110 disabled:opacity-60"
                 >
