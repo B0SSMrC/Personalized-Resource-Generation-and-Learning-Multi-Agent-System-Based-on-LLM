@@ -73,6 +73,32 @@ async def test_tutor_streams_and_returns_explanation():
     assert events[-1].data["explanation_md"]
 
 
+async def test_tutor_strips_closing_pleasantry():
+    """弱模型爱在结尾加“希望以上讲解能帮助你…”客套，应被确定性剥掉。"""
+    md = "## 概念\n数组是连续内存。\n\n## 复杂度\n- 访问 O(1)\n\n希望以上讲解能帮助你理解数组。"
+    events = await _collect(TutorAgent(FakeLLMClient(responses=[md])).run("array", Profile()))
+    out = events[-1].data["explanation_md"]
+    assert "希望以上讲解" not in out
+    assert "## 概念" in out and "访问 O(1)" in out
+
+
+async def test_tutor_keeps_real_trailing_section():
+    """不得误删正常的结尾小节（标题/列表结尾）。"""
+    md = "## 概念\n数组连续内存。\n\n## 典型应用\n- 排序算法"
+    events = await _collect(TutorAgent(FakeLLMClient(responses=[md])).run("array", Profile()))
+    out = events[-1].data["explanation_md"]
+    assert "## 典型应用" in out and "排序算法" in out
+
+
+async def test_tutor_falls_back_when_output_is_unstructured_wall():
+    """LLM 退化成无标题无列表的纯文本墙时，回退到（有结构的）预烘素材。"""
+    wall = "队列是一种先进先出的数据结构。它在很多场景都有用。它的操作效率很高。"
+    events = await _collect(TutorAgent(FakeLLMClient(responses=[wall])).run("queue", Profile()))
+    out = events[-1].data["explanation_md"]
+    assert "##" in out  # 回退到含 ## 标题的预烘 queue.json
+    assert wall not in out
+
+
 async def test_tutor_falls_back_to_prebaked_on_llm_failure():
     class Boom(FakeLLMClient):
         async def stream(self, messages, **kw):
