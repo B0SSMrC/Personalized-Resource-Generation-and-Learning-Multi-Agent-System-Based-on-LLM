@@ -1,9 +1,10 @@
+import hashlib
 import heapq
 import json
 import sqlite3
 from pathlib import Path
 
-from app.models import KnowledgePoint, Profile, ResourceBundle
+from app.models import FavoriteQuestion, KnowledgePoint, Profile, ResourceBundle
 
 _DATA_DIR = Path(__file__).parent
 _GRAPH_FILE = _DATA_DIR / "knowledge_graph.json"
@@ -117,3 +118,90 @@ def _make_repo():
 
 
 profile_repo = _make_repo()
+
+
+# ---------- 收藏仓储 ----------
+
+def fav_id(kp_id: str, stem: str) -> str:
+    return hashlib.sha1(f"{kp_id}|{stem}".encode("utf-8")).hexdigest()[:12]
+
+
+class InMemoryFavoritesRepo:
+    def __init__(self):
+        self._store: dict[str, dict[str, FavoriteQuestion]] = {}
+
+    def list(self, learner_id: str = "demo") -> list[FavoriteQuestion]:
+        return list(self._store.get(learner_id, {}).values())
+
+    def add(self, learner_id: str, fav: FavoriteQuestion) -> FavoriteQuestion:
+        fav = fav.model_copy(update={"id": fav_id(fav.kp_id, fav.stem)})
+        self._store.setdefault(learner_id, {})[fav.id] = fav
+        return fav
+
+    def remove(self, learner_id: str, qid: str) -> None:
+        self._store.get(learner_id, {}).pop(qid, None)
+
+    def clear(self, learner_id: str, kp_id: str | None = None) -> None:
+        store = self._store.get(learner_id)
+        if store is None:
+            return
+        if kp_id is None:
+            store.clear()
+        else:
+            for i in [i for i, f in store.items() if f.kp_id == kp_id]:
+                store.pop(i, None)
+
+
+class SQLiteFavoritesRepo:
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+        with sqlite3.connect(self.db_path) as con:
+            con.execute(
+                "CREATE TABLE IF NOT EXISTS favorites "
+                "(learner_id TEXT, id TEXT, kp_id TEXT, stem TEXT, answer TEXT, "
+                "difficulty INTEGER, PRIMARY KEY (learner_id, id))"
+            )
+
+    def list(self, learner_id: str = "demo") -> list[FavoriteQuestion]:
+        with sqlite3.connect(self.db_path) as con:
+            rows = con.execute(
+                "SELECT id, kp_id, stem, answer, difficulty FROM favorites WHERE learner_id=?",
+                (learner_id,),
+            ).fetchall()
+        return [FavoriteQuestion(id=r[0], kp_id=r[1], stem=r[2], answer=r[3], difficulty=r[4])
+                for r in rows]
+
+    def add(self, learner_id: str, fav: FavoriteQuestion) -> FavoriteQuestion:
+        fav = fav.model_copy(update={"id": fav_id(fav.kp_id, fav.stem)})
+        with sqlite3.connect(self.db_path) as con:
+            con.execute(
+                "INSERT OR REPLACE INTO favorites"
+                "(learner_id, id, kp_id, stem, answer, difficulty) VALUES(?,?,?,?,?,?)",
+                (learner_id, fav.id, fav.kp_id, fav.stem, fav.answer, fav.difficulty),
+            )
+        return fav
+
+    def remove(self, learner_id: str, qid: str) -> None:
+        with sqlite3.connect(self.db_path) as con:
+            con.execute("DELETE FROM favorites WHERE learner_id=? AND id=?", (learner_id, qid))
+
+    def clear(self, learner_id: str, kp_id: str | None = None) -> None:
+        with sqlite3.connect(self.db_path) as con:
+            if kp_id is None:
+                con.execute("DELETE FROM favorites WHERE learner_id=?", (learner_id,))
+            else:
+                con.execute("DELETE FROM favorites WHERE learner_id=? AND kp_id=?",
+                            (learner_id, kp_id))
+
+
+def _make_favorites_repo():
+    try:
+        from app.config import settings
+        if settings.db_path:
+            return SQLiteFavoritesRepo(settings.db_path)
+    except Exception:  # noqa: BLE001  回退内存
+        pass
+    return InMemoryFavoritesRepo()
+
+
+favorites_repo = _make_favorites_repo()

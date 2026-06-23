@@ -50,3 +50,11 @@ class AgentEvent(BaseModel):
     type: str  # agent_start | token | agent_done | agent_error
     content: str = ""
     data: dict | None = None
+
+
+class FavoriteQuestion(BaseModel):
+    id: str = ""
+    kp_id: str
+    stem: str
+    answer: str = ""
+    difficulty: int = 1
