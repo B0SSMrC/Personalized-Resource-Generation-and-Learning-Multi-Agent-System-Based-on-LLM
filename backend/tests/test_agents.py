@@ -198,3 +198,14 @@ async def test_quizzer_falls_back_to_prebaked_on_bad_json():
     events = await _collect(QuizzerAgent(FakeLLMClient(responses=["这不是JSON"])).run("array", Profile()))
     qs = events[-1].data["questions"]
     assert len(qs) >= 1 and "stem" in qs[0]  # 回退到预烘 array.json 的题
+
+
+async def test_quizzer_falls_back_to_prebaked_on_llm_exception():
+    """演示铁律：LLM 调用抛异常时也必须回退预烘题，绝不白屏。"""
+    class Boom(FakeLLMClient):
+        async def chat(self, messages, **kw):
+            raise RuntimeError("network down")
+
+    events = await _collect(QuizzerAgent(Boom()).run("array", Profile()))
+    qs = events[-1].data["questions"]
+    assert len(qs) >= 1 and "stem" in qs[0]

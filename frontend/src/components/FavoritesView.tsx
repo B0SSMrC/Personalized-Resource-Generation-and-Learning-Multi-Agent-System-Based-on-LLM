@@ -49,7 +49,9 @@ export default function FavoritesView({ favorites, graph, onRemove, onClear }: P
                 {groups[kid].length} 题
               </span>
               <button
-                onClick={() => onClear(kid)}
+                onClick={() => {
+                  if (window.confirm(`确定清空「${nameOf(kid)}」的全部收藏吗？`)) onClear(kid);
+                }}
                 className="ml-auto text-xs text-slate-400 transition hover:text-rose-500"
               >
                 清空本知识点
