@@ -9,7 +9,8 @@ import SortingAnim from "./animations/SortingAnim";
 import TreeAnim from "./animations/TreeAnim";
 import GraphAnim from "./animations/GraphAnim";
 import LinearAnim from "./animations/LinearAnim";
-import { IconCheck, IconReplay, IconSparkles } from "./icons";
+import { IconCheck, IconReplay, IconSparkles, IconStar } from "./icons";
+import type { FavoriteQuestion } from "../types";
 
 type AgentName = "tutor" | "visualizer" | "quizzer";
 
@@ -21,6 +22,8 @@ interface Props {
   generating: { tutor: boolean; visualizer: boolean; quizzer: boolean };
   onGenerate: (agent: AgentName) => void;
   onComplete?: (kpId: string) => void;
+  favorites: FavoriteQuestion[];
+  onToggleFavorite: (kpId: string, q: { stem: string; answer: string; difficulty: number }) => void;
 }
 
 type Tab = "explain" | "anim" | "code" | "quiz";
@@ -103,6 +106,8 @@ export default function ResourcePanel({
   generating,
   onGenerate,
   onComplete,
+  favorites,
+  onToggleFavorite,
 }: Props) {
   const [tab, setTab] = useState<Tab>("explain");
   const [code, setCode] = useState<{ language: string; source: string; output: string } | null>(null);
@@ -207,11 +212,35 @@ export default function ResourcePanel({
               <ul className="space-y-3">
                 {questions.map((q, i) => (
                   <li key={i} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
-                    <div className="flex gap-2 text-sm font-medium text-slate-800">
-                      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-md bg-violet-100 text-xs text-violet-700">
+                    <div className="flex items-start gap-2 text-sm font-medium text-slate-800">
+                      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md bg-violet-100 text-xs text-violet-700">
                         {i + 1}
                       </span>
-                      <span>{q.stem}</span>
+                      <span className="flex-1">{q.stem}</span>
+                      {(() => {
+                        const fav = favorites.some(
+                          (f) => f.kp_id === kpId && f.stem === q.stem,
+                        );
+                        return (
+                          <button
+                            onClick={() =>
+                              onToggleFavorite(kpId, {
+                                stem: q.stem,
+                                answer: q.answer,
+                                difficulty: q.difficulty,
+                              })
+                            }
+                            title={fav ? "取消收藏" : "收藏"}
+                            className="shrink-0"
+                          >
+                            <IconStar
+                              className={`h-4 w-4 transition ${
+                                fav ? "text-amber-500" : "text-slate-300 hover:text-amber-400"
+                              }`}
+                            />
+                          </button>
+                        );
+                      })()}
                     </div>
                     <details className="mt-2 pl-7 text-sm text-slate-600">
                       <summary className="cursor-pointer text-violet-600 hover:text-violet-700">

@@ -36,3 +36,11 @@ export interface ResourceBundle {
   code: { language: string; source: string; output: string };
   question_templates: { stem: string; answer: string; difficulty: number }[];
 }
+
+export interface FavoriteQuestion {
+  id: string;
+  kp_id: string;
+  stem: string;
+  answer: string;
+  difficulty: number;
+}

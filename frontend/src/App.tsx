@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getJSON, postJSON, streamSSE } from "./api/client";
-import type { AgentEvent, Graph, Profile } from "./types";
+import type { AgentEvent, FavoriteQuestion, Graph, Profile } from "./types";
 import Sidebar from "./components/Sidebar";
 import ProfileChat from "./components/ProfileChat";
 import AgentFeed from "./components/AgentFeed";
@@ -31,10 +31,14 @@ export default function App() {
   const [kpId, setKpId] = useState("array");
   const [path, setPath] = useState<string[]>([]);
   const [rationale, setRationale] = useState("");
+  const [favorites, setFavorites] = useState<FavoriteQuestion[]>([]);
 
   useEffect(() => {
     getJSON<Profile>("/profile").then(setProfile).catch(console.error);
     getJSON<Graph>("/knowledge-graph").then(setGraph).catch(console.error);
+    getJSON<{ favorites: FavoriteQuestion[] }>("/favorites")
+      .then((d) => setFavorites(d.favorites))
+      .catch(console.error);
   }, []);
 
   // 进入知识图谱视图且已有画像、尚未规划时，自动出个性化推荐
@@ -101,6 +105,22 @@ export default function App() {
     setProfile(cleared);
     setPath([]);
     setRationale("");
+  }
+
+  async function toggleFavorite(
+    kpId: string,
+    q: { stem: string; answer: string; difficulty: number },
+  ) {
+    const existing = favorites.find((f) => f.kp_id === kpId && f.stem === q.stem);
+    if (existing) {
+      const d = await postJSON<{ favorites: FavoriteQuestion[] }>("/favorites/delete", {
+        id: existing.id,
+      });
+      setFavorites(d.favorites);
+    } else {
+      const added = await postJSON<FavoriteQuestion>("/favorites", { kp_id: kpId, ...q });
+      setFavorites((prev) => (prev.some((f) => f.id === added.id) ? prev : [...prev, added]));
+    }
   }
 
   const events = eventsByKp[kpId] ?? [];
@@ -221,6 +241,8 @@ export default function App() {
                     generating={generating}
                     onGenerate={(agent) => generate(kpId, [agent])}
                     onComplete={complete}
+                    favorites={favorites}
+                    onToggleFavorite={toggleFavorite}
                   />
                 </div>
               </div>

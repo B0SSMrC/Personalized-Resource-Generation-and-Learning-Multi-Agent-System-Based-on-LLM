@@ -123,3 +123,14 @@ export const IconLock = (p: IconProps) => (
     <path d="M8 11V7a4 4 0 0 1 8 0v4" />
   </Svg>
 );
+export const IconStar = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M12 3.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L12 16.77l-5.2 2.73.99-5.79-4.21-4.1 5.82-.85z" />
+  </svg>
+);
