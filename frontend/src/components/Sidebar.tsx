@@ -6,9 +6,10 @@ import {
   IconDashboard,
   IconGraph,
   IconSparkles,
+  IconStar,
 } from "./icons";
 
-type View = "profile" | "graph" | "workbench";
+type View = "profile" | "graph" | "workbench" | "favorites";
 
 interface Props {
   active: View;
@@ -26,6 +27,7 @@ const META: { id: View; label: string; icon: (p: { className?: string }) => Reac
   { id: "profile", label: "对话画像", icon: IconChat },
   { id: "graph", label: "知识图谱", icon: IconGraph },
   { id: "workbench", label: "学习工作台", icon: IconDashboard },
+  { id: "favorites", label: "收藏夹", icon: IconStar },
 ];
 
 export default function Sidebar({
@@ -121,6 +123,12 @@ export default function Sidebar({
               点击上方按钮生成推荐顺序
             </p>
           )}
+        </div>
+      );
+    if (id === "favorites")
+      return (
+        <div className="text-xs leading-relaxed text-violet-200/80">
+          你收藏的练习题在右侧按知识点分组展示，可移除或清空。
         </div>
       );
     return (

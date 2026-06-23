@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { getJSON, postJSON, streamSSE } from "./api/client";
 import type { AgentEvent, FavoriteQuestion, Graph, Profile } from "./types";
 import Sidebar from "./components/Sidebar";
+import FavoritesView from "./components/FavoritesView";
 import ProfileChat from "./components/ProfileChat";
 import AgentFeed from "./components/AgentFeed";
 import ResourcePanel from "./components/ResourcePanel";
 import KnowledgeGraph from "./components/KnowledgeGraph";
 import { IconRoute, IconSparkles } from "./components/icons";
 
-type View = "profile" | "graph" | "workbench";
+type View = "profile" | "graph" | "workbench" | "favorites";
 type AgentName = "tutor" | "visualizer" | "quizzer";
 const ALL_AGENTS: AgentName[] = ["tutor", "visualizer", "quizzer"];
 
@@ -121,6 +122,18 @@ export default function App() {
       const added = await postJSON<FavoriteQuestion>("/favorites", { kp_id: kpId, ...q });
       setFavorites((prev) => (prev.some((f) => f.id === added.id) ? prev : [...prev, added]));
     }
+  }
+
+  async function removeFavorite(id: string) {
+    const d = await postJSON<{ favorites: FavoriteQuestion[] }>("/favorites/delete", { id });
+    setFavorites(d.favorites);
+  }
+
+  async function clearFavorites(kpId?: string) {
+    const d = await postJSON<{ favorites: FavoriteQuestion[] }>("/favorites/clear", {
+      kp_id: kpId ?? null,
+    });
+    setFavorites(d.favorites);
   }
 
   const events = eventsByKp[kpId] ?? [];
@@ -246,6 +259,28 @@ export default function App() {
                   />
                 </div>
               </div>
+            </section>
+          )}
+
+          {view === "favorites" && (
+            <section>
+              <header className="mb-5">
+                <div className="text-xs font-semibold uppercase tracking-widest text-violet-500">
+                  模块 04
+                </div>
+                <h1 className="mt-1 font-heading text-3xl font-bold">
+                  练习题<span className="text-gradient">收藏夹</span>
+                </h1>
+                <p className="mt-1 text-sm text-slate-500">
+                  收藏的练习题按知识点分组，可移除或清空。
+                </p>
+              </header>
+              <FavoritesView
+                favorites={favorites}
+                graph={graph}
+                onRemove={removeFavorite}
+                onClear={clearFavorites}
+              />
             </section>
           )}
         </div>
