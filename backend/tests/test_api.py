@@ -61,3 +61,22 @@ def test_reset_profile_clears_everything():
     assert body["goal"] == "" and body["history"] == []
     # 持久层也已清空
     assert profile_repo.get_profile().mastered == []
+
+
+def test_favorites_add_list_idempotent_delete_clear():
+    from app.data.repository import favorites_repo
+    favorites_repo.clear("demo")  # 干净起点
+    r = client.post("/api/favorites",
+                    json={"kp_id": "array", "stem": "数组访问?", "answer": "O(1)", "difficulty": 1})
+    assert r.status_code == 200
+    fid = r.json()["id"]
+    assert fid
+    assert any(f["stem"] == "数组访问?" for f in client.get("/api/favorites").json()["favorites"])
+    # 幂等：同题再收一次不增加
+    client.post("/api/favorites", json={"kp_id": "array", "stem": "数组访问?", "answer": "O(1)"})
+    assert len(client.get("/api/favorites").json()["favorites"]) == 1
+    # 删除一题
+    assert client.post("/api/favorites/delete", json={"id": fid}).json()["favorites"] == []
+    # 按 kp 清空 / 全部清空
+    client.post("/api/favorites", json={"kp_id": "queue", "stem": "FIFO?"})
+    assert client.post("/api/favorites/clear", json={}).json()["favorites"] == []

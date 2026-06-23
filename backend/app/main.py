@@ -8,8 +8,8 @@ from pydantic import BaseModel
 from app.agents.coordinator import Coordinator
 from app.config import build_llm
 from app.data import repository
-from app.data.repository import profile_repo
-from app.models import Profile
+from app.data.repository import profile_repo, favorites_repo
+from app.models import FavoriteQuestion, Profile
 
 app = FastAPI(title="个性化学习多智能体系统")
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
@@ -42,6 +42,21 @@ class CompleteBody(BaseModel):
     kp_id: str
 
 
+class FavoriteBody(BaseModel):
+    kp_id: str
+    stem: str
+    answer: str = ""
+    difficulty: int = 1
+
+
+class FavDeleteBody(BaseModel):
+    id: str
+
+
+class FavClearBody(BaseModel):
+    kp_id: str | None = None
+
+
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
@@ -64,6 +79,30 @@ def reset_profile():
     """清空当前学习画像（含历史），返回空画像。"""
     profile_repo.save_profile(Profile())
     return profile_repo.get_profile().model_dump()
+
+
+@app.get("/api/favorites")
+def list_favorites():
+    return {"favorites": [f.model_dump() for f in favorites_repo.list()]}
+
+
+@app.post("/api/favorites")
+def add_favorite(body: FavoriteBody):
+    fav = favorites_repo.add("demo", FavoriteQuestion(
+        kp_id=body.kp_id, stem=body.stem, answer=body.answer, difficulty=body.difficulty))
+    return fav.model_dump()
+
+
+@app.post("/api/favorites/delete")
+def delete_favorite(body: FavDeleteBody):
+    favorites_repo.remove("demo", body.id)
+    return {"favorites": [f.model_dump() for f in favorites_repo.list()]}
+
+
+@app.post("/api/favorites/clear")
+def clear_favorites(body: FavClearBody):
+    favorites_repo.clear("demo", body.kp_id)
+    return {"favorites": [f.model_dump() for f in favorites_repo.list()]}
 
 
 @app.get("/api/resource/{kp_id}")
