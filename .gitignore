@@ -24,3 +24,10 @@ Thumbs.db
 
 # Logs
 *.log
+
+# 配套文档与交付物（最终打包提交时单独包含，不进源码仓库）
+docs/design-doc/
+ppt/
+
+# 临时/scratch
+.superpowers/
