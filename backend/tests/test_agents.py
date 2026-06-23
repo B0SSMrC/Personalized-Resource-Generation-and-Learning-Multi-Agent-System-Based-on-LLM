@@ -183,3 +183,18 @@ async def test_profiler_moves_concept_from_weak_to_mastered():
     assert "binary_tree" in prof["mastered"]
     assert "binary_tree" not in prof["weak_points"]
     assert not (set(prof["mastered"]) & set(prof["weak_points"]))
+
+
+async def test_quizzer_uses_llm_generated_questions():
+    payload = ('[{"stem":"队列遵循什么原则?","answer":"FIFO","difficulty":1},'
+               '{"stem":"BFS 用什么结构?","answer":"队列","difficulty":2}]')
+    events = await _collect(QuizzerAgent(FakeLLMClient(responses=[payload])).run("queue", Profile()))
+    qs = events[-1].data["questions"]
+    assert len(qs) == 2
+    assert qs[0]["stem"] == "队列遵循什么原则?" and qs[0]["answer"] == "FIFO"
+
+
+async def test_quizzer_falls_back_to_prebaked_on_bad_json():
+    events = await _collect(QuizzerAgent(FakeLLMClient(responses=["这不是JSON"])).run("array", Profile()))
+    qs = events[-1].data["questions"]
+    assert len(qs) >= 1 and "stem" in qs[0]  # 回退到预烘 array.json 的题
